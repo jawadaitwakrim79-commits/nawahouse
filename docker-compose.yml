@@ -1,0 +1,83 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: nawahouse
+      POSTGRES_USER: nawahouse
+      POSTGRES_PASSWORD: nawahouse
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # ── MaxMind GeoLite2 auto-updater ────────────────────────────────────────
+  # Writes updated GeoLite2-Country.mmdb to ./backend/data/ every week.
+  # The backend image copies that folder at build time (see backend/Dockerfile).
+  # Requires GEOIPUPDATE_ACCOUNT_ID + GEOIPUPDATE_LICENSE_KEY in the root .env
+  geoipupdate:
+    image: ghcr.io/maxmind/geoipupdate:latest
+    restart: unless-stopped
+    volumes:
+      - ./backend/data:/usr/share/GeoIP   # shared with backend below
+    environment:
+      GEOIPUPDATE_ACCOUNT_ID: "${GEOIPUPDATE_ACCOUNT_ID}"
+      GEOIPUPDATE_LICENSE_KEY: "${GEOIPUPDATE_LICENSE_KEY}"
+      GEOIPUPDATE_EDITION_IDS: "GeoLite2-Country"
+      GEOIPUPDATE_FREQUENCY: 168          # hours — update every week
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://nawahouse:nawahouse@db:5432/nawahouse?sslmode=disable
+      CORS_ORIGINS: "http://localhost:3000"
+      PUBLIC_SITE_URL: "http://localhost:3000"
+      SHEET_WEBHOOK_URL: ""
+      SHEET_WEBHOOK_SECRET: ""
+      META_PIXEL_ID: ""
+      META_CAPI_ACCESS_TOKEN: ""
+      TIKTOK_PIXEL_CODE: ""
+      TIKTOK_ACCESS_TOKEN: ""
+      SNAP_PIXEL_ID: ""
+      SNAP_CAPI_ACCESS_TOKEN: ""
+      # ── Admin ──
+      ADMIN_USERNAME: "${ADMIN_USERNAME}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD}"
+      # ── IP intelligence ──
+      MAXMIND_DB_PATH: "/app/data/GeoLite2-Country.mmdb"
+      STRICT_KSA_ONLY: "true"
+      # VPN provider — fill after choosing one (ipqualityscore / proxycheck / ipinfo)
+      VPN_PROVIDER: "${VPN_PROVIDER}"
+      VPN_API_KEY: "${VPN_API_KEY}"
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: "http://localhost:3000"
+        NEXT_PUBLIC_API_URL: "http://localhost:8000"
+        NEXT_PUBLIC_META_PIXEL_ID: ""
+        NEXT_PUBLIC_TIKTOK_PIXEL_ID: ""
+        NEXT_PUBLIC_SNAP_PIXEL_ID: ""
+        NEXT_PUBLIC_CONTACT_PHONE: ""
+        NEXT_PUBLIC_CONTACT_EMAIL: ""
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_SITE_URL: "http://localhost:3000"
+      NEXT_PUBLIC_API_URL: "http://localhost:8000"
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:

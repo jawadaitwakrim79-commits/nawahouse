@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+sqlalchemy>=2.0.0
+alembic
+asyncpg
+pydantic>=2.0.0
+pydantic-settings
+httpx
+python-multipart
+
+# ── Admin dashboard ──
+jinja2
+
+# ── IP intelligence (optional, pip-install only if used) ──
+# Uncomment after adding MAXMIND_DB_PATH to .env and downloading GeoLite2-Country.mmdb
+maxminddb

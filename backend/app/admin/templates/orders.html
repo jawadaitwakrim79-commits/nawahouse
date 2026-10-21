@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}الطلبات · نوا{% endblock %}
+
+{% block body %}
+  <div class="section-head">
+    <h2>الطلبات</h2>
+    <span class="meta">{{ from }} → {{ to }}</span>
+  </div>
+
+  <form class="filters" method="get" action="/admin/orders">
+    <div class="field">
+      <label for="from">من تاريخ</label>
+      <input type="date" id="from" name="from" value="{{ from }}">
+    </div>
+    <div class="field">
+      <label for="to">إلى تاريخ</label>
+      <input type="date" id="to" name="to" value="{{ to }}">
+    </div>
+    <div class="field">
+      <label for="status">الحالة</label>
+      <select id="status" name="status">
+        <option value="">كل الحالات</option>
+        <option value="new"       {% if status == 'new'       %}selected{% endif %}>جديد</option>
+        <option value="confirmed" {% if status == 'confirmed' %}selected{% endif %}>مؤكّد</option>
+        <option value="shipped"   {% if status == 'shipped'   %}selected{% endif %}>مُرسَل</option>
+        <option value="delivered" {% if status == 'delivered' %}selected{% endif %}>تم التوصيل</option>
+        <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>ملغي</option>
+      </select>
+    </div>
+    <button type="submit" class="btn">تطبيق</button>
+  </form>
+
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <table>
+      <thead>
+        <tr>
+          <th>رقم الطلب</th>
+          <th>الاسم</th>
+          <th>الجوال</th>
+          <th>القطع</th>
+          <th>Upsell</th>
+          <th>المجموع</th>
+          <th>الحالة</th>
+          <th>Sheet</th>
+          <th>التاريخ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+          <tr>
+            <td><a href="/admin/orders/{{ o.public_id }}"><strong>{{ o.public_id }}</strong></a></td>
+            <td>{{ o.customer_name }}</td>
+            <td class="ltr">{{ o.phone_e164 }}</td>
+            <td class="num">{{ o.main_units }}</td>
+            <td>
+              {% if o.upsell_slug %}
+                <span class="pill warn">+{{ o.upsell_slug }}</span>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td class="num"><strong>{{ o.total_sar }} ر.س</strong></td>
+            <td>
+              {% if o.status == 'new' %}<span class="pill brand">جديد</span>
+              {% elif o.status == 'confirmed' %}<span class="pill ok">مؤكّد</span>
+              {% elif o.status == 'cancelled' %}<span class="pill err">ملغي</span>
+              {% else %}<span class="pill">{{ o.status }}</span>{% endif %}
+            </td>
+            <td>
+              {% if o.sheet_status == 'sent' %}<span class="pill ok">تم</span>
+              {% elif o.sheet_status == 'failed' %}<span class="pill err">فشل</span>
+              {% else %}<span class="pill">{{ o.sheet_status }}</span>{% endif %}
+            </td>
+            <td class="num" style="white-space: nowrap;">
+              {{ o.created_at.strftime('%Y-%m-%d %H:%M') }}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="9" style="text-align:center; color: var(--muted); padding: 32px;">لا توجد طلبات في هذه الفترة.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div style="display:flex; justify-content:center; gap:10px; margin-top:20px;">
+    {% if page > 1 %}
+      <a class="btn ghost" href="?from={{ from }}&to={{ to }}&status={{ status }}&page={{ page - 1 }}">← السابق</a>
+    {% endif %}
+    <span class="pill">صفحة {{ page }}</span>
+    {% if orders|length == 50 %}
+      <a class="btn ghost" href="?from={{ from }}&to={{ to }}&status={{ status }}&page={{ page + 1 }}">التالي →</a>
+    {% endif %}
+  </div>
+{% endblock %}

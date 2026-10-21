@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}نظرة عامة · نوا{% endblock %}
+
+{% block body %}
+  {% if not maxmind_configured or vpn_provider == "—" %}
+    <div class="alert warn">
+      <strong>⚠ تنبيه:</strong>
+      {% if not maxmind_configured %}MaxMind غير مُهيّأ — لا نستطيع تحديد بلد المصدر. {% endif %}
+      {% if vpn_provider == "—" %}كاشف VPN غير مُهيّأ — لا نستطيع فلترة حركة الـ VPN. {% endif %}
+      النقرات ستُعدّ كـ «غير صالحة» حتى تُضاف المفاتيح في ملف <code>.env</code>.
+    </div>
+  {% endif %}
+
+  <!-- Filters -->
+  <form class="filters" method="get" action="/admin/">
+    <div class="field">
+      <label for="from">من تاريخ</label>
+      <input type="date" id="from" name="from" value="{{ from }}">
+    </div>
+    <div class="field">
+      <label for="to">إلى تاريخ</label>
+      <input type="date" id="to" name="to" value="{{ to }}">
+    </div>
+    <label class="checkbox">
+      <input type="checkbox" name="include_invalid" value="true" {% if include_invalid %}checked{% endif %}>
+      تضمين النقرات من خارج السعودية و VPN
+    </label>
+    <button type="submit" class="btn">تطبيق</button>
+    <a href="/admin/" class="btn ghost">إعادة الضبط</a>
+  </form>
+
+  <!-- KPI strip -->
+  <div class="grid cols-4 mt">
+    <div class="card stat">
+      <div class="v">{{ m.valid_ksa_clicks }}</div>
+      <div class="l">نقرات صالحة (SA, بدون VPN)</div>
+      <div class="delta">من إجمالي {{ m.total_clicks }} نقرة</div>
+    </div>
+    <div class="card stat">
+      <div class="v">{{ m.orders_count }}</div>
+      <div class="l">طلبات</div>
+      <div class="delta">{{ m.orders_revenue }} ر.س إيراد</div>
+    </div>
+    <div class="card stat">
+      <div class="v">{{ (m.conversion_rate * 100) | round(2) }}%</div>
+      <div class="l">معدل التحويل</div>
+      <div class="delta">
+        طلبات ÷ {% if strict_ksa_only and not include_invalid %}نقرات صالحة{% else %}إجمالي النقرات{% endif %}
+      </div>
+    </div>
+    <div class="card stat">
+      <div class="v">{{ m.unique_sessions }}</div>
+      <div class="l">زائرات فريدات</div>
+      <div class="delta">—</div>
+    </div>
+  </div>
+
+  <!-- Traffic breakdown + chart -->
+  <div class="grid cols-2 mt">
+    <div class="card">
+      <h3>مصدر النقرات</h3>
+      <table>
+        <tr><td>نقرات صالحة (SA, بدون VPN)</td><td class="num" style="text-align:left;">{{ m.valid_ksa_clicks }}</td></tr>
+        <tr><td>نقرات من خارج السعودية</td><td class="num" style="text-align:left;">{{ m.foreign_clicks }}</td></tr>
+        <tr><td>نقرات من VPN / Proxy</td><td class="num" style="text-align:left;">{{ m.vpn_clicks }}</td></tr>
+        <tr>
+          <td style="color:var(--muted);">غير معروفة (IP خاص أو مزوّد غير مُهيّأ)</td>
+          <td class="num" style="text-align:left; color:var(--muted);">
+            {{ m.total_clicks - m.valid_ksa_clicks - m.foreign_clicks - m.vpn_clicks }}
+          </td>
+        </tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>النشاط اليومي (نقرات صالحة)</h3>
+      {% set max_clicks = (series | map(attribute='clicks') | max) if series else 1 %}
+      {% set max_clicks = max_clicks if max_clicks > 0 else 1 %}
+      <div class="chart">
+        {% for d in series %}
+          {% set h = (d.clicks / max_clicks * 100) | round(1) %}
+          <div class="bar" style="height:{{ h }}%"
+               data-tip="{{ d.date }} · {{ d.clicks }} نقرة · {{ d.orders }} طلب"></div>
+        {% endfor %}
+      </div>
+      {% if not series %}<p style="color:var(--muted); text-align:center;">لا توجد بيانات في هذه الفترة.</p>{% endif %}
+    </div>
+  </div>
+
+  <!-- Top products + Recent orders -->
+  <div class="grid cols-2 mt">
+    <div class="card">
+      <h3>المنتجات الأكثر طلباً</h3>
+      <table>
+        <thead><tr><th>المنتج</th><th style="text-align:left;">القطع المباعة</th></tr></thead>
+        <tbody>
+          {% for t in top %}
+            <tr>
+              <td>{{ t.slug }}</td>
+              <td class="num" style="text-align:left;">{{ t.qty }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="2" style="color:var(--muted);">لا توجد طلبات.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>آخر الطلبات</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>رقم</th><th>الاسم</th><th>المجموع</th><th>الحالة</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in recent %}
+            <tr>
+              <td><a href="/admin/orders/{{ o.public_id }}">{{ o.public_id }}</a></td>
+              <td>{{ o.customer_name }}</td>
+              <td class="num">{{ o.total_sar }} ر.س</td>
+              <td>
+                {% if o.status == 'new' %}
+                  <span class="pill brand">جديد</span>
+                {% elif o.status == 'confirmed' %}
+                  <span class="pill ok">مؤكّد</span>
+                {% elif o.status == 'cancelled' %}
+                  <span class="pill err">ملغي</span>
+                {% else %}
+                  <span class="pill">{{ o.status }}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" style="color:var(--muted);">لا توجد طلبات.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div style="margin-top: 12px; text-align: center;">
+        <a href="/admin/orders" class="btn ghost">عرض كل الطلبات ←</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

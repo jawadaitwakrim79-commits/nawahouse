@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}طلب {{ o.public_id }} · نوا{% endblock %}
+
+{% block body %}
+  <div style="margin-bottom: 20px;">
+    <a href="/admin/orders" style="color: var(--muted);">← عودة لقائمة الطلبات</a>
+  </div>
+
+  <div class="section-head">
+    <h2>طلب {{ o.public_id }}</h2>
+    <div>
+      {% if o.status == 'new' %}<span class="pill brand">جديد</span>
+      {% elif o.status == 'confirmed' %}<span class="pill ok">مؤكّد</span>
+      {% elif o.status == 'cancelled' %}<span class="pill err">ملغي</span>
+      {% else %}<span class="pill">{{ o.status }}</span>{% endif %}
+    </div>
+  </div>
+
+  <div class="grid cols-3">
+    <!-- Customer card -->
+    <div class="card">
+      <h3>العميلة</h3>
+      <div style="font-size: 18px; font-weight: 700;">{{ o.customer_name }}</div>
+      <div class="ltr" style="font-size: 16px; font-feature-settings: 'tnum'; margin-top: 6px;">
+        {{ o.phone_e164 }}
+      </div>
+      <div style="margin-top: 14px; display: flex; gap: 8px;">
+        <a href="tel:{{ o.phone_e164 }}" class="btn">اتصال</a>
+        <a href="https://wa.me/{{ o.phone_e164 | replace('+','') }}" target="_blank" rel="noopener" class="btn ghost">WhatsApp</a>
+      </div>
+    </div>
+
+    <!-- Order totals -->
+    <div class="card">
+      <h3>المجموع</h3>
+      <div style="font-size: 28px; font-weight: 700; color: var(--brass);">
+        {{ o.total_sar }} <span style="font-size: 14px; color: var(--muted);">ر.س</span>
+      </div>
+      <table style="margin-top: 12px;">
+        <tr><td>طريقة الدفع</td><td style="text-align:left;"><strong>COD</strong></td></tr>
+        <tr><td>عدد القطع الأساسية</td><td style="text-align:left;">{{ o.main_units }}</td></tr>
+        <tr><td>Upsell</td><td style="text-align:left;">{% if o.upsell_slug %}+{{ o.upsell_slug }} (99 ر.س){% else %}—{% endif %}</td></tr>
+      </table>
+    </div>
+
+    <!-- Meta -->
+    <div class="card">
+      <h3>البيانات التقنية</h3>
+      <table>
+        <tr><td>تاريخ الإنشاء</td><td style="text-align:left;" class="num">{{ o.created_at.strftime('%Y-%m-%d %H:%M') }}</td></tr>
+        <tr><td>حالة Sheet</td><td style="text-align:left;">
+          {% if o.sheet_status == 'sent' %}<span class="pill ok">مُرسَل</span>
+          {% elif o.sheet_status == 'failed' %}<span class="pill err">فشل</span>
+          {% else %}<span class="pill">{{ o.sheet_status }}</span>{% endif %}
+        </td></tr>
+        <tr><td>IP</td><td class="ltr">{{ o.client_ip or '—' }}</td></tr>
+        <tr><td>Event ID</td><td class="ltr" style="font-size: 10px;">{{ o.client_event_id }}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Items -->
+  <div class="card mt">
+    <h3>القطع</h3>
+    <table>
+      <thead>
+        <tr><th>المنتج</th><th>النوع</th><th style="text-align:left;">الكمية</th></tr>
+      </thead>
+      <tbody>
+        {% for it in o.items %}
+          <tr>
+            <td><strong>{{ it.slug }}</strong></td>
+            <td>
+              {% if it.pricing == 'upsell' %}
+                <span class="pill warn">Upsell (99 ر.س)</span>
+              {% else %}
+                <span class="pill">أساسي</span>
+              {% endif %}
+            </td>
+            <td class="num" style="text-align:left;">{{ it.quantity }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Attribution -->
+  <div class="card mt">
+    <h3>الإحالة والإعلان</h3>
+    <table>
+      <tr><td>Page URL</td><td class="ltr">{{ o.page_url or '—' }}</td></tr>
+      <tr><td>User Agent</td><td class="ltr" style="font-size: 11px;">{{ o.user_agent or '—' }}</td></tr>
+      <tr><td>fbp</td><td class="ltr">{{ o.fbp or '—' }}</td></tr>
+      <tr><td>fbc</td><td class="ltr">{{ o.fbc or '—' }}</td></tr>
+      <tr><td>ttp / ttclid</td><td class="ltr">{{ o.ttp or '—' }} / {{ o.ttclid or '—' }}</td></tr>
+      <tr><td>Snap click id</td><td class="ltr">{{ o.sc_click_id or '—' }}</td></tr>
+      <tr><td>External ID</td><td class="ltr">{{ o.external_id or '—' }}</td></tr>
+    </table>
+  </div>
+{% endblock %}
