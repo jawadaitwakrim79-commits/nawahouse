@@ -207,6 +207,11 @@ async def lookup(ip: str) -> IpIntel:
       - IP is private/loopback (local dev traffic)
       - No geolocation provider is configured
     """
+    # TEMP: GeoLite2 / MaxMind is disabled so a bad .mmdb cannot take the
+    # process down. Lookups return "unknown" and never open the database.
+    logger.info("MaxMind lookup skipped (temporarily disabled) for %s", ip)
+    return IpIntel.unknown(source="disabled")
+
     if _is_private_ip(ip):
         return IpIntel.unknown(source="private")
 
