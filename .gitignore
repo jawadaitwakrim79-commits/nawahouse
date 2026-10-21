@@ -11,9 +11,5 @@ dist
 build
 *.egg-info
 
-# MaxMind databases — binary files, updated weekly, not tracked in git.
-# Place GeoLite2-Country.mmdb in backend/data/ manually or via geoipupdate container.
-*.mmdb
-
 # One-off deploy scripts. They contain host credentials and must stay local.
 temp-push/
