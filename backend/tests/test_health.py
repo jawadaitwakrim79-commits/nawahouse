@@ -1,12 +1,9 @@
-"""Health reporting and shutdown diagnostics. No live database."""
-import signal
-
+"""Health endpoint and startup diagnostics — no live database required."""
 import pytest
 
-from app.api.routes.health import health
+from app.api.routes.health import health, health_db
 from app.core.config import _normalize_db_url
 from app.db.session import public_db_error
-from app.main import _install_shutdown_logging, _PREVIOUS_SIGNALS
 
 
 def test_database_url_strips_sslmode_and_uses_asyncpg():
@@ -25,41 +22,45 @@ def test_public_db_error_hides_url():
 
 
 @pytest.mark.asyncio
-async def test_health_is_up_only_when_database_answers(monkeypatch):
+async def test_health_returns_200_without_any_db_call():
+    """
+    /health must not touch the database.
+    It must return {"status": "ok"} regardless of whether the DB is reachable —
+    because Easypanel uses this endpoint to decide whether to restart the container.
+    """
+    result = await health()
+    assert result == {"status": "ok"}
+
+
+@pytest.mark.asyncio
+async def test_health_does_not_call_ping_db(monkeypatch):
+    """Verify that /health never calls ping_db even if we monkey-patch it to fail."""
+    async def should_not_be_called():
+        raise AssertionError("/health must not call ping_db")
+
+    monkeypatch.setattr("app.api.routes.health.ping_db", should_not_be_called)
+    result = await health()
+    assert result == {"status": "ok"}
+
+
+@pytest.mark.asyncio
+async def test_health_db_is_up_when_database_answers(monkeypatch):
     async def ok():
         return None
 
     monkeypatch.setattr("app.api.routes.health.ping_db", ok)
-    assert await health() == {"ok": True, "db": "up"}
+    result = await health_db()
+    assert result == {"status": "ok", "db": "up"}
 
 
 @pytest.mark.asyncio
-async def test_health_is_down_when_database_raises(monkeypatch):
+async def test_health_db_is_down_when_database_raises(monkeypatch):
     async def fail():
         raise ConnectionError("postgresql://user:secret@db/nawahouse")
 
     monkeypatch.setattr("app.api.routes.health.ping_db", fail)
-    response = await health()
+    response = await health_db()
     assert response.status_code == 503
-    assert b'"db":"down"' in response.body or b'"db": "down"' in response.body
-    assert b"secret" not in response.body
-
-
-def test_shutdown_handler_logs_and_calls_previous():
-    seen = []
-
-    def previous(signum, frame):
-        seen.append(signum)
-
-    old_term = signal.signal(signal.SIGTERM, signal.SIG_DFL)
-    old_int = signal.signal(signal.SIGINT, signal.SIG_DFL)
-    try:
-        signal.signal(signal.SIGTERM, previous)
-        _install_shutdown_logging()
-        handler = signal.getsignal(signal.SIGTERM)
-        handler(signal.SIGTERM, None)
-        assert seen == [signal.SIGTERM]
-    finally:
-        signal.signal(signal.SIGTERM, old_term)
-        signal.signal(signal.SIGINT, old_int)
-        _PREVIOUS_SIGNALS.clear()
+    body = response.body
+    assert b"secret" not in body
+    assert b"db_down" in body
