@@ -72,8 +72,8 @@ class Settings(BaseSettings):
     VPN_PROVIDER: str = ""
     VPN_API_KEY: str = ""
 
-    # When true, dashboard click metrics keep only Saudi non-VPN traffic,
-    # and POST /api/orders rejects public IPs outside Saudi Arabia.
+    # Dashboard click metrics. Order creation always requires country SA
+    # and does not consult this flag.
     STRICT_KSA_ONLY: bool = True
 
 

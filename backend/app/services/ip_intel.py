@@ -200,10 +200,22 @@ def _is_private_ip(ip: str) -> bool:
         return True
 
 
+_BAKED_MAXMIND_PATH = "/app/data/GeoLite2-Country.mmdb"
+
+
 def maxmind_db_path() -> str:
-    """Container path used when MAXMIND_DB_PATH is unset or blank."""
-    path = (settings.MAXMIND_DB_PATH or "").strip()
-    return path or "/app/data/GeoLite2-Country.mmdb"
+    """
+    Prefer a configured file that exists. A blank or stale path such as
+    /app/geoip/... falls back to the file baked into the image.
+    """
+    configured = (settings.MAXMIND_DB_PATH or "").strip()
+    if configured and os.path.exists(configured):
+        return configured
+    if os.path.exists(_BAKED_MAXMIND_PATH):
+        if configured and configured != _BAKED_MAXMIND_PATH:
+            logger.warning("MaxMind path %s is missing; using %s", configured, _BAKED_MAXMIND_PATH)
+        return _BAKED_MAXMIND_PATH
+    return configured or _BAKED_MAXMIND_PATH
 
 
 def describe_maxmind() -> str:
@@ -216,26 +228,17 @@ def describe_maxmind() -> str:
 
 def checkout_block_reason(ip: str, intel: IpIntel) -> Optional[str]:
     """
-    Why this IP must not place an order, or None when checkout is allowed.
-
-    Private addresses are allowed so local development still works.
-    A public IP is refused when the country is not Saudi Arabia, when a
-    configured VPN check flags it, or when MaxMind could not be opened.
-    An IP missing from an opened database is allowed: GeoLite2 has gaps,
-    and those gaps must not stop a Saudi customer.
+    None only for a resolved Saudi address that is not a VPN.
+    Every other result rejects the order: another country, a private or
+    missing address, a lookup error, or an unreadable MaxMind file.
     """
-    if not settings.STRICT_KSA_ONLY:
-        return None
-    if _is_private_ip(ip):
-        return None
+    del ip  # the caller already resolved the address; the decision is the country
     if intel.country_code == "SA" and not intel.is_vpn:
         return None
     if intel.is_vpn:
         return "vpn"
     if intel.country_code and intel.country_code != "SA":
         return "outside_ksa"
-    if "maxmind-mmdb" in intel.source or "maxmind-ws" in intel.source:
-        return None
     return "geo_unavailable"
 
 

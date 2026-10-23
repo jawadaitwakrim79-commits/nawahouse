@@ -26,6 +26,28 @@ async def create_order(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> OrderOut:
+    # Country gate runs before any order read or insert. This is the only
+    # route that creates an order.
+    client_ip = get_client_ip(request)
+    try:
+        intel = await lookup_ip(client_ip)
+    except Exception as exc:
+        logger.error("ip lookup failed: %s", type(exc).__name__)
+        intel = IpIntel.unknown(source="error")
+    reason = checkout_block_reason(client_ip, intel)
+    logger.info(
+        "order decision=%s country=%s reason=%s source=%s",
+        "rejected" if reason else "allowed",
+        intel.country_code,
+        reason or "sa",
+        intel.source,
+    )
+    if reason:
+        raise HTTPException(
+            status_code=403,
+            detail="التوصيل متاح داخل السعودية فقط.",
+        )
+
     # --- Idempotency: return existing if event_id already committed ---
     existing = await db.scalar(
         select(Order).where(Order.client_event_id == body.event_id)
@@ -35,25 +57,6 @@ async def create_order(
             order_id=existing.public_id,
             event_id=existing.client_event_id,
             total_sar=existing.total_sar,
-        )
-
-    client_ip = get_client_ip(request)
-    try:
-        intel = await lookup_ip(client_ip)
-    except Exception as exc:
-        logger.error("ip lookup failed: %s", type(exc).__name__)
-        intel = IpIntel.unknown(source="error")
-    reason = checkout_block_reason(client_ip, intel)
-    if reason:
-        logger.info(
-            "order rejected reason=%s country=%s source=%s",
-            reason,
-            intel.country_code,
-            intel.source,
-        )
-        raise HTTPException(
-            status_code=403,
-            detail="التوصيل متاح داخل السعودية فقط.",
         )
 
     # --- Rate limit: max 3 successful orders per phone per 24h ---
