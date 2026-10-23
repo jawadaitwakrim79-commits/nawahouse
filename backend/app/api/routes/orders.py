@@ -14,6 +14,7 @@ from app.core.pricing import main_total, order_total
 from app.services.orders import build_sheet_payload, get_client_ip
 from app.services.sheets import send_to_sheet
 from app.services.capi import send_purchase_capi
+from app.services.ip_intel import IpIntel, checkout_block_reason, lookup as lookup_ip
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -34,6 +35,25 @@ async def create_order(
             order_id=existing.public_id,
             event_id=existing.client_event_id,
             total_sar=existing.total_sar,
+        )
+
+    client_ip = get_client_ip(request)
+    try:
+        intel = await lookup_ip(client_ip)
+    except Exception as exc:
+        logger.error("ip lookup failed: %s", type(exc).__name__)
+        intel = IpIntel.unknown(source="error")
+    reason = checkout_block_reason(client_ip, intel)
+    if reason:
+        logger.info(
+            "order rejected reason=%s country=%s source=%s",
+            reason,
+            intel.country_code,
+            intel.source,
+        )
+        raise HTTPException(
+            status_code=403,
+            detail="التوصيل متاح داخل السعودية فقط.",
         )
 
     # --- Rate limit: max 3 successful orders per phone per 24h ---
@@ -64,7 +84,6 @@ async def create_order(
     seq_val = await db.scalar(text("SELECT nextval('order_public_seq')"))
     public_id = f"NAW-{seq_val}"
 
-    client_ip = get_client_ip(request)
     user_agent = request.headers.get("User-Agent", "")
 
     order = Order(

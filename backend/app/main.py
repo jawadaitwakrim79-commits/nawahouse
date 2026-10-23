@@ -11,6 +11,7 @@ from app.api.router import router
 from app.admin.router import router as admin_router
 from app.admin.api import router as admin_api_router
 from app.db.session import database_target, ping_db, public_db_error
+from app.services.ip_intel import describe_maxmind
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ async def lifespan(app: FastAPI):
         logger.error("startup database connection failed: %s", public_db_error(exc))
         raise RuntimeError("database connection failed during startup") from None
     logger.info("startup database connection ok")
+    logger.info("maxmind %s", describe_maxmind())
     try:
         yield
     finally:

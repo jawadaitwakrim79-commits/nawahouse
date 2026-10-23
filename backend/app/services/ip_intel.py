@@ -63,8 +63,9 @@ def _get_mmdb_reader():
         return _mmdb_reader
     _mmdb_tried = True
 
-    path = settings.MAXMIND_DB_PATH
-    if not path or not os.path.exists(path):
+    path = maxmind_db_path()
+    if not os.path.exists(path):
+        logger.warning("MaxMind MMDB not found at %s", path)
         return None
     try:
         import maxminddb  # type: ignore
@@ -199,6 +200,45 @@ def _is_private_ip(ip: str) -> bool:
         return True
 
 
+def maxmind_db_path() -> str:
+    """Container path used when MAXMIND_DB_PATH is unset or blank."""
+    path = (settings.MAXMIND_DB_PATH or "").strip()
+    return path or "/app/data/GeoLite2-Country.mmdb"
+
+
+def describe_maxmind() -> str:
+    """One-line status for startup logs. Never includes credentials."""
+    path = maxmind_db_path()
+    exists = os.path.exists(path)
+    loaded = _get_mmdb_reader() is not None
+    return f"path={path} exists={exists} loaded={loaded}"
+
+
+def checkout_block_reason(ip: str, intel: IpIntel) -> Optional[str]:
+    """
+    Why this IP must not place an order, or None when checkout is allowed.
+
+    Private addresses are allowed so local development still works.
+    A public IP is refused when the country is not Saudi Arabia, when a
+    configured VPN check flags it, or when MaxMind could not be opened.
+    An IP missing from an opened database is allowed: GeoLite2 has gaps,
+    and those gaps must not stop a Saudi customer.
+    """
+    if not settings.STRICT_KSA_ONLY:
+        return None
+    if _is_private_ip(ip):
+        return None
+    if intel.country_code == "SA" and not intel.is_vpn:
+        return None
+    if intel.is_vpn:
+        return "vpn"
+    if intel.country_code and intel.country_code != "SA":
+        return "outside_ksa"
+    if "maxmind-mmdb" in intel.source or "maxmind-ws" in intel.source:
+        return None
+    return "geo_unavailable"
+
+
 async def lookup(ip: str) -> IpIntel:
     """
     Resolve an IP → (country_code, is_vpn, is_valid_ksa).
@@ -206,27 +246,28 @@ async def lookup(ip: str) -> IpIntel:
     Returns IpIntel.unknown() when:
       - IP is private/loopback (local dev traffic)
       - No geolocation provider is configured
+    A missing or unreadable MMDB is logged and returns unknown.
+    It never raises, so a bad database file cannot stop the process.
     """
-    # TEMP: GeoLite2 / MaxMind is disabled so a bad .mmdb cannot take the
-    # process down. Lookups return "unknown" and never open the database.
-    logger.info("MaxMind lookup skipped (temporarily disabled) for %s", ip)
-    return IpIntel.unknown(source="disabled")
-
     if _is_private_ip(ip):
         return IpIntel.unknown(source="private")
 
     # 1) Country via MaxMind (prefer local MMDB, then Web Services)
-    country = await _lookup_maxmind_mmdb(ip)
-    geo_source = "maxmind-mmdb" if country else ""
-    if country is None:
+    reader = _get_mmdb_reader()
+    country: Optional[str] = None
+    geo_source = ""
+    if reader is not None:
+        country = await _lookup_maxmind_mmdb(ip)
+        # The database opened, even when this particular IP has no row.
+        geo_source = "maxmind-mmdb"
+    else:
         country = await _lookup_maxmind_ws(ip)
-        if country:
-            geo_source = "maxmind-ws"
+        geo_source = "maxmind-ws" if country else "maxmind-unavailable"
 
-    # 2) VPN / proxy
+    # 2) VPN / proxy. None means the provider is not configured.
     is_vpn, risk, vpn_source = await _detect_vpn(ip)
     if is_vpn is None:
-        is_vpn = False  # conservative default: don't block when provider unavailable
+        is_vpn = False
 
     sources = "+".join(s for s in [geo_source, vpn_source] if s) or "none"
     valid = (country == "SA") and (not is_vpn)

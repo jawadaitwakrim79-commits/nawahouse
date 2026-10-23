@@ -51,7 +51,10 @@ class Settings(BaseSettings):
     SNAP_CAPI_ACCESS_TOKEN: str = ""
     SNAP_TEST_EVENT_CODE: str = ""
 
-    # ── Admin dashboard (HTTP Basic Auth) ──
+    # ── Admin dashboard ──
+    # Either ADMIN_TOKEN, or both ADMIN_USERNAME and ADMIN_PASSWORD.
+    # The token is read from the environment only. It is never given a default.
+    ADMIN_TOKEN: str = ""
     ADMIN_USERNAME: str = ""
     ADMIN_PASSWORD: str = ""
 
@@ -69,8 +72,8 @@ class Settings(BaseSettings):
     VPN_PROVIDER: str = ""
     VPN_API_KEY: str = ""
 
-    # Enforcement: when true, only clicks/events from IPs that geolocate to
-    # SA and are NOT flagged as VPN/proxy are counted in dashboard metrics.
+    # When true, dashboard click metrics keep only Saudi non-VPN traffic,
+    # and POST /api/orders rejects public IPs outside Saudi Arabia.
     STRICT_KSA_ONLY: bool = True
 
 

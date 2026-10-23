@@ -35,6 +35,15 @@ export interface OrderResponse {
   currency: string;
 }
 
+export class OrderApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "OrderApiError";
+    this.status = status;
+  }
+}
+
 export async function submitOrder(payload: OrderPayload): Promise<OrderResponse> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20_000);
@@ -46,7 +55,14 @@ export async function submitOrder(payload: OrderPayload): Promise<OrderResponse>
       signal: controller.signal,
     });
     if (!res.ok) {
-      throw new Error(`Order API ${res.status}`);
+      let detail = "";
+      try {
+        const body = (await res.json()) as { detail?: unknown };
+        if (typeof body.detail === "string") detail = body.detail;
+      } catch {
+        detail = "";
+      }
+      throw new OrderApiError(res.status, detail || `Order API ${res.status}`);
     }
     return (await res.json()) as OrderResponse;
   } finally {

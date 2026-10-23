@@ -7,7 +7,7 @@ import { copy } from "@/content/copy";
 import { PRODUCTS, getUpsellSlug, type Slug } from "@/content/products";
 import { mainTotal, orderTotal } from "@/lib/pricing";
 import { isValidPhone, normalizePhone } from "@/lib/phone";
-import { submitOrder } from "@/lib/api";
+import { OrderApiError, submitOrder } from "@/lib/api";
 import { trackPurchase, identifyPixels } from "@/lib/tracking";
 
 type Step = "form" | "upsell" | "submitting";
@@ -197,8 +197,12 @@ export function CheckoutModal() {
 
         clearCart();
         router.push(`/thank-you?order=${res.order_id}`);
-      } catch {
-        setApiError(copy.errorOrder);
+      } catch (err) {
+        setApiError(
+          err instanceof OrderApiError && err.status === 403
+            ? err.message
+            : copy.errorOrder
+        );
         setStep("form");
         setInFlight(false);
       }
