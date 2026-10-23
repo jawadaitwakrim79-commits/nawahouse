@@ -1,6 +1,5 @@
 from __future__ import annotations
-import os
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -15,6 +14,7 @@ from app.admin.queries import (
     daily_series,
     get_order,
     list_orders,
+    parse_date_range,
     top_products,
 )
 from app.core.config import settings
@@ -24,29 +24,6 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
-
-
-def _parse_date_range(
-    from_str: str | None,
-    to_str: str | None,
-) -> tuple[datetime, datetime]:
-    """Parse YYYY-MM-DD (Riyadh local) into UTC datetime range [from, to)."""
-    now_riyadh = datetime.now(RIYADH_TZ)
-    today_riyadh = now_riyadh.replace(hour=0, minute=0, second=0, microsecond=0)
-    default_to = today_riyadh + timedelta(days=1)
-    default_from = today_riyadh - timedelta(days=29)
-
-    def _p(s: str, fallback: datetime) -> datetime:
-        try:
-            d = datetime.strptime(s, "%Y-%m-%d")
-            return d.replace(tzinfo=RIYADH_TZ)
-        except Exception:
-            return fallback
-
-    date_from = _p(from_str, default_from) if from_str else default_from
-    date_to = _p(to_str, default_to) if to_str else default_to
-    # convert to UTC for the query
-    return date_from.astimezone(timezone.utc), date_to.astimezone(timezone.utc)
 
 
 def _ctx_base(request: Request, _user: str) -> dict:
@@ -75,7 +52,7 @@ async def dashboard(
     db: AsyncSession = Depends(get_db),
     user: str = Depends(require_admin),
 ):
-    df, dt = _parse_date_range(date_from, date_to)
+    df, dt = parse_date_range(date_from, date_to)
     metrics = await compute_metrics(db, df, dt, include_invalid=include_invalid)
     series = await daily_series(db, df, dt)
     top = await top_products(db, df, dt)
@@ -107,7 +84,7 @@ async def orders_list(
     db: AsyncSession = Depends(get_db),
     user: str = Depends(require_admin),
 ):
-    df, dt = _parse_date_range(date_from, date_to)
+    df, dt = parse_date_range(date_from, date_to)
     limit = 50
     offset = (page - 1) * limit
     orders = await list_orders(db, df, dt, status_filter=status, limit=limit, offset=offset)
@@ -152,5 +129,5 @@ async def api_series(
     db: AsyncSession = Depends(get_db),
     _user: str = Depends(require_admin),
 ):
-    df, dt = _parse_date_range(date_from, date_to)
+    df, dt = parse_date_range(date_from, date_to)
     return {"series": await daily_series(db, df, dt)}

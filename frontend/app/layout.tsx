@@ -1,12 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Amiri, IBM_Plex_Sans_Arabic, Outfit } from "next/font/google";
 import "./globals.css";
-import { Suspense } from "react";
-import { Header } from "@/components/header/Header";
-import { Footer } from "@/components/footer/Footer";
-import { CartDrawer } from "@/components/cart/CartDrawer";
-import { PixelLoader } from "@/components/pixels/PixelLoader";
-import { ClickTracker } from "@/components/ClickTracker";
+import { SiteShell } from "@/components/SiteShell";
 
 const amiri = Amiri({
   weight: ["400", "700"],
@@ -57,14 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${amiri.variable} ${ibmPlex.variable} ${outfit.variable}`}
     >
       <body className="bg-paper text-ink">
-        <Header />
-        <main>{children}</main>
-        <Footer />
-        <CartDrawer />
-        <PixelLoader />
-        <Suspense fallback={null}>
-          <ClickTracker />
-        </Suspense>
+        <SiteShell>{children}</SiteShell>
       </body>
     </html>
   );

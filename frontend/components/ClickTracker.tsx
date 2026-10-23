@@ -31,6 +31,7 @@ export function ClickTracker() {
   const lastPath = useRef<string | null>(null);
 
   useEffect(() => {
+    if (pathname.startsWith("/admin")) return;
     const fullPath = pathname + (search.toString() ? `?${search.toString()}` : "");
     if (lastPath.current === fullPath) return;
     lastPath.current = fullPath;

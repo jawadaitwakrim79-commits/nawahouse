@@ -15,6 +15,28 @@ from app.models.models import Order, OrderItem
 RIYADH_TZ = timezone(timedelta(hours=3))
 
 
+def parse_date_range(
+    from_str: str | None,
+    to_str: str | None,
+) -> tuple[datetime, datetime]:
+    """Parse YYYY-MM-DD in Asia/Riyadh into a UTC range [from, to)."""
+    now_riyadh = datetime.now(RIYADH_TZ)
+    today_riyadh = now_riyadh.replace(hour=0, minute=0, second=0, microsecond=0)
+    default_to = today_riyadh + timedelta(days=1)
+    default_from = today_riyadh - timedelta(days=29)
+
+    def _p(value: str, fallback: datetime) -> datetime:
+        try:
+            parsed = datetime.strptime(value, "%Y-%m-%d")
+            return parsed.replace(tzinfo=RIYADH_TZ)
+        except Exception:
+            return fallback
+
+    date_from = _p(from_str, default_from) if from_str else default_from
+    date_to = _p(to_str, default_to) if to_str else default_to
+    return date_from.astimezone(timezone.utc), date_to.astimezone(timezone.utc)
+
+
 @dataclass
 class Metrics:
     date_from: datetime
