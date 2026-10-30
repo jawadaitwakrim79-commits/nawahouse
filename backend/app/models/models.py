@@ -16,7 +16,10 @@ class Product(Base):
     name_ar: Mapped[str] = mapped_column(Text, nullable=False)
     full_name_ar: Mapped[str] = mapped_column(Text, nullable=False)
     enemy_ar: Mapped[str] = mapped_column(Text, nullable=False)
-    price_sar: Mapped[int] = mapped_column(Integer, nullable=False, default=199)
+    price_sar: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    price_mad: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    category: Mapped[str | None] = mapped_column(Text, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
 
 
 class Order(Base):
@@ -29,7 +32,11 @@ class Order(Base):
     phone_e164: Mapped[str] = mapped_column(Text, nullable=False)
     main_units: Mapped[int] = mapped_column(Integer, nullable=False)
     upsell_slug: Mapped[str | None] = mapped_column(Text, nullable=True)
-    total_sar: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_mad: Mapped[int] = mapped_column(Integer, nullable=False)
+    shipping_mad: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    city: Mapped[str | None] = mapped_column(Text, nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    delivery_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(Text, nullable=False, default="new")
     sheet_status: Mapped[str] = mapped_column(Text, nullable=False, default="pending")
     page_url: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -56,6 +63,7 @@ class OrderItem(Base):
     slug: Mapped[str] = mapped_column(Text, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     pricing: Mapped[str] = mapped_column(Text, nullable=False)  # "main" | "upsell"
+    variant: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     order: Mapped[Order] = relationship("Order", back_populates="items")
 
@@ -88,3 +96,19 @@ class ContactMessage(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class StoreSetting(Base):
+    __tablename__ = "store_settings"
+
+    key: Mapped[str] = mapped_column(Text, primary_key=True)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class Category(Base):
+    __tablename__ = "categories"
+
+    slug: Mapped[str] = mapped_column(Text, primary_key=True)
+    name_ar: Mapped[str] = mapped_column(Text, nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

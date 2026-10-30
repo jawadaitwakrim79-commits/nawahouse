@@ -19,7 +19,7 @@
   <div class="grid cols-3">
     <!-- Customer card -->
     <div class="card">
-      <h3>العميلة</h3>
+      <h3>العميل</h3>
       <div style="font-size: 18px; font-weight: 700;">{{ o.customer_name }}</div>
       <div class="ltr" style="font-size: 16px; font-feature-settings: 'tnum'; margin-top: 6px;">
         {{ o.phone_e164 }}
@@ -34,12 +34,14 @@
     <div class="card">
       <h3>المجموع</h3>
       <div style="font-size: 28px; font-weight: 700; color: var(--brass);">
-        {{ o.total_sar }} <span style="font-size: 14px; color: var(--muted);">ر.س</span>
+        {{ o.total_mad }} <span style="font-size: 14px; color: var(--muted);">د.م</span>
       </div>
       <table style="margin-top: 12px;">
-        <tr><td>طريقة الدفع</td><td style="text-align:left;"><strong>COD</strong></td></tr>
-        <tr><td>عدد القطع الأساسية</td><td style="text-align:left;">{{ o.main_units }}</td></tr>
-        <tr><td>Upsell</td><td style="text-align:left;">{% if o.upsell_slug %}+{{ o.upsell_slug }} (99 ر.س){% else %}—{% endif %}</td></tr>
+        <tr><td>طريقة الدفع</td><td style="text-align:left;"><strong>الدفع عند الاستلام</strong></td></tr>
+        <tr><td>التوصيل</td><td style="text-align:left;">{{ o.shipping_mad or 0 }} د.م</td></tr>
+        <tr><td>المدينة</td><td style="text-align:left;">{{ o.city or '—' }}</td></tr>
+        <tr><td>العنوان</td><td style="text-align:left;">{{ o.address or '—' }}</td></tr>
+        <tr><td>ملاحظات</td><td style="text-align:left;">{{ o.delivery_notes or '—' }}</td></tr>
       </table>
     </div>
 
@@ -71,11 +73,7 @@
           <tr>
             <td><strong>{{ it.slug }}</strong></td>
             <td>
-              {% if it.pricing == 'upsell' %}
-                <span class="pill warn">Upsell (99 ر.س)</span>
-              {% else %}
-                <span class="pill">أساسي</span>
-              {% endif %}
+              <span class="pill">{{ it.variant or 'أساسي' }}</span>
             </td>
             <td class="num" style="text-align:left;">{{ it.quantity }}</td>
           </tr>

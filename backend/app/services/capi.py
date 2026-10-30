@@ -2,9 +2,9 @@
 CAPI service — Meta, TikTok, and Snap.
 
 Hashing rules (from docs/11-TRACKING-PIXELS-CAPI.md):
-  Meta / Snap  phone: hash of "966XXXXXXXXX"  (no plus)
-  TikTok       phone: hash of "+966XXXXXXXXX" (plus kept)
-  country (Meta): hash of "sa"
+  Meta / Snap  phone: hash of "212XXXXXXXXX"  (no plus)
+  TikTok       phone: hash of "+212XXXXXXXXX" (plus kept)
+  country (Meta): hash of "ma"
   external_id: hash of trimmed UUID (Meta + TikTok)
   IP, UA, fbp, fbc, ttp, ttclid, sc_click_id: raw / never hash
 """
@@ -21,17 +21,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.hashing import maybe_hash, sha256
-from app.core.phone import normalize_sa_phone, PhoneError
+from app.core.catalog import get_product, product_name
+from app.core.phone import normalize_ma_phone, PhoneError
 from app.models.models import Order, OrderItem, TrackingEvent
 from app.schemas.schemas import OrderLineIn
 
 logger = logging.getLogger(__name__)
-
-PRODUCT_NAMES = {
-    "oud": "نوا عود",
-    "shafaq": "نوا شفق",
-    "safa": "نوا صفاء",
-}
 
 TIKTOK_EVENT_MAP = {
     "Purchase": "CompletePayment",
@@ -233,7 +228,7 @@ def _build_user_data(
     meta_ud: dict[str, Any] = {
         "ph": meta_ph,
         "fn": [sha256(first_name)] if first_name else None,
-        "country": [sha256("sa")],
+        "country": [sha256("ma")],
         "external_id": [ext_hash] if ext_hash else None,
         "client_ip_address": client_ip or None,
         "client_user_agent": user_agent or None,
@@ -285,29 +280,33 @@ async def send_purchase_capi(
 
     content_ids = list({l.slug for l in items})
     num_items = sum(l.quantity for l in items)
-    total = order.total_sar
+    total = order.total_mad
+
+    def _price(slug: str) -> int:
+        product = get_product(slug)
+        return product.price_mad if product else 0
 
     meta_contents = [
         {
             "id": l.slug,
             "quantity": l.quantity,
-            "item_price": 99 if l.pricing == "upsell" else 199,
+            "item_price": _price(l.slug),
         }
         for l in items
     ]
     tt_contents = [
         {
             "content_id": l.slug,
-            "content_name": PRODUCT_NAMES.get(l.slug, l.slug),
+            "content_name": product_name(l.slug),
             "quantity": l.quantity,
-            "price": 99 if l.pricing == "upsell" else 199,
+            "price": _price(l.slug),
             "brand": "Nawa House",
         }
         for l in items
     ]
 
     meta_custom = {
-        "currency": "SAR",
+        "currency": "MAD",
         "value": total,
         "content_ids": content_ids,
         "content_type": "product",
@@ -316,13 +315,13 @@ async def send_purchase_capi(
         "order_id": order.public_id,
     }
     tt_props = {
-        "currency": "SAR",
+        "currency": "MAD",
         "value": float(total),
         "content_type": "product",
         "contents": tt_contents,
     }
     snap_custom = {
-        "currency": "SAR",
+        "currency": "MAD",
         "value": total,
         "order_id": order.public_id,
         "content_ids": content_ids,
@@ -359,7 +358,7 @@ async def send_funnel_capi(
     phone_e164: str | None = None
     if phone:
         try:
-            r = normalize_sa_phone(phone)
+            r = normalize_ma_phone(phone)
             phone_e164 = r.e164
         except PhoneError:
             phone_e164 = None

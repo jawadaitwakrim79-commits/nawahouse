@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { normalizePhone } from "@/lib/phone";
 import { sendContact } from "@/lib/api";
+import { copy } from "@/content/copy";
 
 export function ContactForm() {
   const [name, setName] = useState("");
@@ -16,7 +17,7 @@ export function ContactForm() {
     e.preventDefault();
     const phoneResult = normalizePhone(phone);
     if (!phoneResult) {
-      setPhoneError("رقم الجوال غير صحيح. استخدمي 05xxxxxxxx");
+      setPhoneError(copy.contact.phoneError);
       return;
     }
     setPhoneError("");
@@ -26,7 +27,7 @@ export function ContactForm() {
       await sendContact({ name, phone: phoneResult.e164, message });
       setDone(true);
     } catch {
-      setError("ما أرسلت. جرّبي مرة ثانية.");
+      setError(copy.contact.sendError);
     } finally {
       setSubmitting(false);
     }
@@ -35,8 +36,8 @@ export function ContactForm() {
   if (done) {
     return (
       <div style={{ background: "var(--color-ivory)", borderRadius: "16px", padding: "24px", border: "1px solid var(--color-line)", textAlign: "center" }}>
-        <h2 style={{ fontFamily: "var(--font-amiri), serif", fontSize: "24px", marginBottom: "8px" }}>وصلت رسالتكِ</h2>
-        <p style={{ color: "var(--color-muted)" }}>نردّ في ساعات العمل.</p>
+        <h2 style={{ fontFamily: "var(--font-amiri), serif", fontSize: "24px", marginBottom: "8px" }}>{copy.contact.successTitle}</h2>
+        <p style={{ color: "var(--color-muted)" }}>{copy.contact.successMsg}</p>
       </div>
     );
   }
@@ -62,7 +63,7 @@ export function ContactForm() {
           inputMode="tel"
           value={phone}
           onChange={(e) => { setPhone(e.target.value); setPhoneError(""); }}
-          placeholder="05xxxxxxxx"
+          placeholder="06XXXXXXXX"
           required
           style={{ width: "100%", padding: "12px 14px", border: `1px solid ${phoneError ? "var(--color-brand)" : "var(--color-line)"}`, borderRadius: "12px", fontSize: "16px", background: "var(--color-paper)", color: "var(--color-ink)", outline: "none", direction: "ltr", textAlign: "right" }}
         />

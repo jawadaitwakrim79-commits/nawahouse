@@ -5,9 +5,9 @@
   {% if not maxmind_configured or vpn_provider == "—" %}
     <div class="alert warn">
       <strong>⚠ تنبيه:</strong>
-      {% if not maxmind_configured %}MaxMind غير مُهيّأ — لا نستطيع تحديد بلد المصدر. {% endif %}
-      {% if vpn_provider == "—" %}كاشف VPN غير مُهيّأ — لا نستطيع فلترة حركة الـ VPN. {% endif %}
-      النقرات ستُعدّ كـ «غير صالحة» حتى تُضاف المفاتيح في ملف <code>.env</code>.
+      تحديد البلد و VPN للوحة فقط، ولا يمنع الطلبات من المغرب أو أي مدينة.
+      {% if not maxmind_configured %}MaxMind غير مُهيّأ. {% endif %}
+      {% if vpn_provider == "—" %}كاشف VPN غير مُهيّأ. {% endif %}
     </div>
   {% endif %}
 
@@ -23,7 +23,7 @@
     </div>
     <label class="checkbox">
       <input type="checkbox" name="include_invalid" value="true" {% if include_invalid %}checked{% endif %}>
-      تضمين النقرات من خارج السعودية و VPN
+      عرض كل الزيارات
     </label>
     <button type="submit" class="btn">تطبيق</button>
     <a href="/admin/" class="btn ghost">إعادة الضبط</a>
@@ -32,20 +32,20 @@
   <!-- KPI strip -->
   <div class="grid cols-4 mt">
     <div class="card stat">
-      <div class="v">{{ m.valid_ksa_clicks }}</div>
-      <div class="l">نقرات صالحة (SA, بدون VPN)</div>
+      <div class="v">{{ m.morocco_clicks }}</div>
+      <div class="l">زيارات من المغرب</div>
       <div class="delta">من إجمالي {{ m.total_clicks }} نقرة</div>
     </div>
     <div class="card stat">
       <div class="v">{{ m.orders_count }}</div>
       <div class="l">طلبات</div>
-      <div class="delta">{{ m.orders_revenue }} ر.س إيراد</div>
+      <div class="delta">{{ m.orders_revenue }} د.م إيراد</div>
     </div>
     <div class="card stat">
       <div class="v">{{ (m.conversion_rate * 100) | round(2) }}%</div>
       <div class="l">معدل التحويل</div>
       <div class="delta">
-        طلبات ÷ {% if strict_ksa_only and not include_invalid %}نقرات صالحة{% else %}إجمالي النقرات{% endif %}
+        طلبات ÷ إجمالي الزيارات
       </div>
     </div>
     <div class="card stat">
@@ -60,8 +60,8 @@
     <div class="card">
       <h3>مصدر النقرات</h3>
       <table>
-        <tr><td>نقرات صالحة (SA, بدون VPN)</td><td class="num" style="text-align:left;">{{ m.valid_ksa_clicks }}</td></tr>
-        <tr><td>نقرات من خارج السعودية</td><td class="num" style="text-align:left;">{{ m.foreign_clicks }}</td></tr>
+        <tr><td>زيارات من المغرب</td><td class="num" style="text-align:left;">{{ m.morocco_clicks }}</td></tr>
+        <tr><td>زيارات من خارج المغرب</td><td class="num" style="text-align:left;">{{ m.foreign_clicks }}</td></tr>
         <tr><td>نقرات من VPN / Proxy</td><td class="num" style="text-align:left;">{{ m.vpn_clicks }}</td></tr>
         <tr>
           <td style="color:var(--muted);">غير معروفة (IP خاص أو مزوّد غير مُهيّأ)</td>
@@ -117,7 +117,7 @@
             <tr>
               <td><a href="/admin/orders/{{ o.public_id }}">{{ o.public_id }}</a></td>
               <td>{{ o.customer_name }}</td>
-              <td class="num">{{ o.total_sar }} ر.س</td>
+              <td class="num">{{ o.total_mad }} د.م</td>
               <td>
                 {% if o.status == 'new' %}
                   <span class="pill brand">جديد</span>

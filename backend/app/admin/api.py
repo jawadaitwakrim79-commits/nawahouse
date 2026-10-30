@@ -19,7 +19,14 @@ from app.admin.queries import (
     top_products,
 )
 from app.db.session import get_db
+from app.core.catalog import product_name
 from app.models.models import Order
+from app.services.settings_store import (
+    get_shipping_mad,
+    list_categories,
+    set_shipping_mad,
+    update_categories,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/admin", tags=["admin-api"])
@@ -37,7 +44,11 @@ def order_dict(order: Order) -> dict:
         "public_id": order.public_id,
         "customer_name": order.customer_name,
         "phone_e164": order.phone_e164,
-        "total_sar": order.total_sar,
+        "total_mad": order.total_mad,
+        "shipping_mad": order.shipping_mad or 0,
+        "city": order.city,
+        "address": order.address,
+        "delivery_notes": order.delivery_notes,
         "status": order.status,
         "sheet_status": order.sheet_status,
         "main_units": order.main_units,
@@ -47,7 +58,13 @@ def order_dict(order: Order) -> dict:
         "client_event_id": order.client_event_id,
         "created_at": created.isoformat() if created else None,
         "items": [
-            {"slug": item.slug, "quantity": item.quantity, "pricing": item.pricing}
+            {
+                "slug": item.slug,
+                "name_ar": product_name(item.slug),
+                "quantity": item.quantity,
+                "pricing": item.pricing,
+                "variant": item.variant,
+            }
             for item in (order.items or [])
         ],
     }
@@ -94,9 +111,11 @@ async def overview(
         "to": label_to,
         "orders_count": metrics.orders_count,
         "orders_revenue": metrics.orders_revenue,
+        "currency": "MAD",
         "conversion_rate": metrics.conversion_rate,
         "total_clicks": metrics.total_clicks,
         "valid_ksa_clicks": metrics.valid_ksa_clicks,
+        "morocco_clicks": metrics.morocco_clicks,
         "vpn_clicks": metrics.vpn_clicks,
         "foreign_clicks": metrics.foreign_clicks,
         "unique_sessions": metrics.unique_sessions,
@@ -148,3 +167,58 @@ async def order_detail(
     if order is None:
         raise HTTPException(status_code=404, detail="Order not found")
     return {"order": order_dict(order)}
+
+
+class ShippingIn(BaseModel):
+    shipping_mad: int
+
+
+class CategoryIn(BaseModel):
+    slug: str
+    name_ar: str
+    active: bool = True
+    sort_order: int = 0
+
+
+class CategoriesIn(BaseModel):
+    categories: list[CategoryIn]
+
+
+@router.get("/settings")
+async def read_settings(
+    db: AsyncSession = Depends(get_db),
+    _user: str = Depends(require_admin),
+) -> dict:
+    return {
+        "currency": "MAD",
+        "shipping_mad": await get_shipping_mad(db),
+        "categories": await list_categories(db),
+    }
+
+
+@router.put("/settings")
+async def write_settings(
+    body: ShippingIn,
+    db: AsyncSession = Depends(get_db),
+    _user: str = Depends(require_admin),
+) -> dict:
+    try:
+        amount = await set_shipping_mad(db, body.shipping_mad)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"currency": "MAD", "shipping_mad": amount}
+
+
+@router.put("/categories")
+async def write_categories(
+    body: CategoriesIn,
+    db: AsyncSession = Depends(get_db),
+    _user: str = Depends(require_admin),
+) -> dict:
+    try:
+        categories = await update_categories(
+            db, [item.model_dump() for item in body.categories]
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"categories": categories}

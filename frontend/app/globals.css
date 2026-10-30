@@ -1,28 +1,22 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Nawa House · Apothecary of the Home palette ───────────── */
-  /* Surfaces (warm neutrals, unchanged for continuity) */
-  --color-paper: #FBF7F2;
-  --color-ivory: #F3EDE4;
-  --color-sand: #E7DCCC;
-  --color-line: #DED3C5;
+  /* Nawa House · watches and eyewear */
+  --color-paper: #F7F5F0;
+  --color-ivory: #F3F0EA;
+  --color-sand: #EAE8E3;
+  --color-line: #DDD9D2;
 
-  /* Text */
-  --color-ink: #1C1612;
-  --color-muted: #6B5D52;
+  --color-ink: #171717;
+  --color-muted: #6F6A62;
 
-  /* Primary = Olive Apothecary Green */
-  --color-brand: #2C3A2E;
-  --color-brand-deep: #1F2A21;
-  --color-on-brand: #F3EDE4;
+  --color-brand: #171717;
+  --color-brand-deep: #171717;
+  --color-on-brand: #F7F5F0;
 
-  /* Accent = Warm Brass (used sparingly — price, badges, trust ticks) */
-  --color-brass: #B5894C;
-  --color-brass-soft: #D4B384;
-
-  /* Legacy name kept so AnnouncementBar/Ladder keep working — now mapped to deep olive */
-  --color-twilight: #1F2A21;
+  --color-brass: #C5A46D;
+  --color-brass-soft: #E4D3B0;
+  --color-twilight: #171717;
 
   --font-serif: var(--font-amiri), serif;
   --font-sans: var(--font-ibm-plex), "IBM Plex Sans Arabic", sans-serif;
@@ -144,6 +138,22 @@ button {
   }
   .band.flip {
     grid-template-areas: "copy media";
+  }
+}
+
+.lift {
+  transition: transform 280ms ease, box-shadow 280ms ease;
+}
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 40px rgba(23, 23, 23, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lift,
+  .lift:hover {
+    transition: none;
+    transform: none;
   }
 }
 

@@ -1,21 +1,17 @@
 """
-Phone normalisation for نوا للبيت / Nawa House.
+Phone normalisation for Nawa House / Morocco.
 
-Accepted inputs (all map to +9665XXXXXXXX):
-  05XXXXXXXX
-  5XXXXXXXX
-  9665XXXXXXXX
-  +9665XXXXXXXX
-  009665XXXXXXXX
+Accepted inputs (all map to +212 followed by 9 digits):
+  06XXXXXXXX, 07XXXXXXXX, 05XXXXXXXX
+  6XXXXXXXX, 7XXXXXXXX, 5XXXXXXXX
+  2126XXXXXXXX, +2126XXXXXXXX, 002126XXXXXXXX
+
+The national number is 9 digits and starts with 5, 6, or 7
+(mobile 06/07, and 05 ranges used in Morocco).
 
 Rejected:
-  0112345678   (landline — does not start with 5 after country code)
-  anything that is not a Saudi mobile
-
-Returns a PhoneResult namedtuple with:
-  e164       : "+966512345678"
-  meta_digits: "966512345678"   (no plus — for Meta and Snap CAPI hash)
-  tiktok_e164: "+966512345678"  (with plus — for TikTok CAPI hash)
+  Saudi +966 numbers
+  landline-length mistakes, short input, empty input
 """
 
 from __future__ import annotations
@@ -23,37 +19,35 @@ import re
 from dataclasses import dataclass
 
 
-# After stripping the country code, a valid Saudi mobile is 05XXXXXXXX
-# → national number = 5 followed by exactly 8 digits.
-_NATIONAL_RE = re.compile(r"^5\d{8}$")
+_ARABIC_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
+_NATIONAL_RE = re.compile(r"^[5-7]\d{8}$")
 
 
 @dataclass(frozen=True)
 class PhoneResult:
-    e164: str         # "+966512345678"
-    meta_digits: str  # "966512345678"
-    tiktok_e164: str  # "+966512345678"
+    e164: str
+    meta_digits: str
+    tiktok_e164: str
 
 
 class PhoneError(ValueError):
     pass
 
 
-def normalize_sa_phone(raw: str) -> PhoneResult:
+def normalize_ma_phone(raw: str) -> PhoneResult:
     """
-    Normalize a raw Saudi phone input.
-    Raises PhoneError for invalid or non-mobile numbers.
+    Normalize a raw Moroccan phone input.
+    Raises PhoneError for invalid numbers.
     """
-    cleaned = re.sub(r"[\s\-()]+", "", raw)
+    cleaned = (raw or "").translate(_ARABIC_DIGITS)
+    cleaned = re.sub(r"[\s\-().]+", "", cleaned)
 
-    # Strip leading +, 00
     if cleaned.startswith("+"):
         cleaned = cleaned[1:]
     if cleaned.startswith("00"):
         cleaned = cleaned[2:]
 
-    # Accept 966XXXXXXXXX  or  05XXXXXXXX  or  5XXXXXXXX
-    if cleaned.startswith("966"):
+    if cleaned.startswith("212"):
         national = cleaned[3:]
     elif cleaned.startswith("0"):
         national = cleaned[1:]
@@ -62,11 +56,10 @@ def normalize_sa_phone(raw: str) -> PhoneResult:
 
     if not _NATIONAL_RE.match(national):
         raise PhoneError(
-            f"Invalid Saudi mobile number: {raw!r}. "
-            "Expected format 05XXXXXXXX where X is a digit (9 digits after 0)."
+            f"Invalid Moroccan phone number: {raw!r}. "
+            "Expected a Moroccan number such as 06XXXXXXXX or +2126XXXXXXXX."
         )
 
-    digits_with_cc = "966" + national      # no plus
+    digits_with_cc = "212" + national
     e164 = "+" + digits_with_cc
-
     return PhoneResult(e164=e164, meta_digits=digits_with_cc, tiktok_e164=e164)

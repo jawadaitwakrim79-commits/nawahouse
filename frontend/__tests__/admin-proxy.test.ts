@@ -1,5 +1,5 @@
 import { adminApiBase, adminUpstream } from "../lib/admin-proxy";
-import { formatRate, formatSar } from "../lib/admin-view";
+import { formatRate, formatMad } from "../lib/admin-view";
 
 describe("admin proxy", () => {
   const previous = process.env.NEXT_PUBLIC_API_URL;
@@ -20,7 +20,7 @@ describe("admin proxy", () => {
 
 describe("admin figures", () => {
   test("formats database numbers without inventing them", () => {
-    expect(formatSar(0)).toBe(new Intl.NumberFormat("ar-SA").format(0));
+    expect(formatMad(0)).toBe(new Intl.NumberFormat("fr-MA").format(0));
     expect(formatRate(0)).toBe("0.0%");
     expect(formatRate(0.125)).toBe("12.5%");
   });

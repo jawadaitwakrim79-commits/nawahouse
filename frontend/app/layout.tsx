@@ -26,22 +26,22 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: {
-    default: "نوا للبيت · بيت العناية",
-    template: "%s · نوا للبيت",
+    default: "نوا هاوس · ساعات ونظارات",
+    template: "%s · Nawa House",
   },
   description:
-    "نوا للبيت · بيت العناية. ثلاث قطع مختارة بعناية للبيت السعودي: مبخرة عود كهربائية، إضاءة شفق، ومنقّي هواء HEPA-13. سعر ثابت، الدفع عند الاستلام.",
+    "نوا هاوس. ساعات رجالية ونسائية، نظارات شمسية، وإطارات طبية. الأسعار بالدرهم، والدفع عند الاستلام داخل المغرب.",
   metadataBase: new URL("https://nawahouse.shop"),
   alternates: { canonical: "/" },
   openGraph: {
-    siteName: "نوا للبيت · Nawa House",
-    locale: "ar_SA",
+    siteName: "Nawa House",
+    locale: "ar_MA",
     type: "website",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2C3A2E",
+  themeColor: "#171717",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

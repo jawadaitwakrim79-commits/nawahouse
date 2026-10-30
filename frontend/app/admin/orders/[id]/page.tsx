@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { formatSar, formatWhen, type AdminOrder } from "@/lib/admin-view";
+import { formatMad, formatWhen, type AdminOrder } from "@/lib/admin-view";
 
 export default function AdminOrderPage() {
   const params = useParams<{ id: string }>();
@@ -45,9 +45,12 @@ export default function AdminOrderPage() {
       <h1 className="mt-3 font-serif text-3xl text-brand">{order.public_id}</h1>
       <div className="mt-6 grid gap-4 md:grid-cols-3">
         <section className="rounded-[20px] border border-line bg-white p-4">
-          <h2 className="text-sm text-muted">العميلة</h2>
+          <h2 className="text-sm text-muted">العميل</h2>
           <p className="mt-2 text-lg">{order.customer_name}</p>
           <p className="mt-1 font-display" dir="ltr">{order.phone_e164}</p>
+          <p className="mt-2 text-sm">{order.city || "—"}</p>
+          <p className="text-sm text-muted">{order.address || "—"}</p>
+          {order.delivery_notes ? <p className="mt-2 text-sm">{order.delivery_notes}</p> : null}
           <div className="mt-4 flex flex-wrap gap-2">
             <a className="rounded-full bg-brand px-4 py-2 text-sm text-on-brand" href={`tel:${order.phone_e164}`}>
               اتصال
@@ -59,10 +62,10 @@ export default function AdminOrderPage() {
         </section>
         <section className="rounded-[20px] border border-line bg-white p-4">
           <h2 className="text-sm text-muted">المجموع</h2>
-          <p className="mt-2 font-serif text-3xl text-brass">{formatSar(order.total_sar)} <span className="text-base text-muted">ر.س</span></p>
-          <p className="mt-2 text-sm">القطع الأساسية: {order.main_units}</p>
-          <p className="text-sm">الإضافة: {order.upsell_slug || "—"}</p>
-          <p className="text-sm">الدفع: عند الاستلام</p>
+          <p className="mt-2 font-serif text-3xl text-brass">{formatMad(order.total_mad)} <span className="text-base text-muted">DH</span></p>
+          <p className="mt-2 text-sm">التوصيل: {formatMad(order.shipping_mad || 0)} DH</p>
+          <p className="text-sm">القطع: {order.main_units}</p>
+          <p className="text-sm">الدفع عند الاستلام</p>
         </section>
         <section className="rounded-[20px] border border-line bg-white p-4">
           <h2 className="text-sm text-muted">الحالة</h2>
@@ -77,15 +80,15 @@ export default function AdminOrderPage() {
             <tr>
               <th className="px-3 py-2 text-right font-medium">القطعة</th>
               <th className="px-3 py-2 text-right font-medium">الكمية</th>
-              <th className="px-3 py-2 text-right font-medium">التسعير</th>
+              <th className="px-3 py-2 text-right font-medium">اللون</th>
             </tr>
           </thead>
           <tbody>
             {order.items.map((item, index) => (
               <tr key={`${item.slug}-${index}`} className="border-t border-line">
-                <td className="px-3 py-3">{item.slug}</td>
+                <td className="px-3 py-3">{item.name_ar || item.slug}</td>
                 <td className="px-3 py-3">{item.quantity}</td>
-                <td className="px-3 py-3">{item.pricing}</td>
+                <td className="px-3 py-3">{item.variant || "—"}</td>
               </tr>
             ))}
           </tbody>

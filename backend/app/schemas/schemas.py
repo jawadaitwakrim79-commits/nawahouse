@@ -3,20 +3,20 @@ from typing import Literal
 from pydantic import BaseModel, field_validator, model_validator
 import re
 
-
-VALID_SLUGS = {"oud", "shafaq", "safa"}
+from app.core.catalog import VALID_SLUGS
 
 
 class OrderLineIn(BaseModel):
     slug: str
     quantity: int
-    pricing: Literal["main", "upsell"]
+    pricing: Literal["main", "upsell"] = "main"
+    variant: str | None = None
 
     @field_validator("slug")
     @classmethod
     def validate_slug(cls, v: str) -> str:
         if v not in VALID_SLUGS:
-            raise ValueError(f"slug must be one of {VALID_SLUGS}")
+            raise ValueError(f"slug must be one of {sorted(VALID_SLUGS)}")
         return v
 
     @field_validator("quantity")
@@ -26,11 +26,26 @@ class OrderLineIn(BaseModel):
             raise ValueError("quantity must be 1–6")
         return v
 
+    @field_validator("variant")
+    @classmethod
+    def validate_variant(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip()
+        if not v:
+            return None
+        if len(v) > 40:
+            raise ValueError("variant is too long")
+        return v
+
 
 class OrderIn(BaseModel):
     event_id: str
     name: str
     phone: str
+    city: str
+    address: str
+    delivery_notes: str | None = None
     lines: list[OrderLineIn]
     page_url: str | None = None
     fbp: str | None = None
@@ -62,24 +77,49 @@ class OrderIn(BaseModel):
             raise ValueError("name must not be digits only")
         return v
 
+    @field_validator("city")
+    @classmethod
+    def validate_city(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 2 or len(v) > 60:
+            raise ValueError("city must be 2–60 characters")
+        return v
+
+    @field_validator("address")
+    @classmethod
+    def validate_address(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 4 or len(v) > 200:
+            raise ValueError("address must be 4–200 characters")
+        return v
+
+    @field_validator("delivery_notes")
+    @classmethod
+    def validate_notes(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip()
+        if not v:
+            return None
+        if len(v) > 300:
+            raise ValueError("delivery notes must be 300 characters or fewer")
+        return v
+
     @model_validator(mode="after")
     def validate_lines(self) -> "OrderIn":
-        main_lines = [l for l in self.lines if l.pricing == "main"]
-        upsell_lines = [l for l in self.lines if l.pricing == "upsell"]
-        if not main_lines:
-            raise ValueError("at least one main line is required")
-        if len(upsell_lines) > 1:
-            raise ValueError("at most one upsell line")
-        if upsell_lines and upsell_lines[0].quantity != 1:
-            raise ValueError("upsell quantity must be 1")
+        if not self.lines:
+            raise ValueError("at least one line is required")
+        if any(line.pricing != "main" for line in self.lines):
+            raise ValueError("only main lines are accepted")
         return self
 
 
 class OrderOut(BaseModel):
     order_id: str
     event_id: str
-    total_sar: int
-    currency: str = "SAR"
+    total_mad: int
+    shipping_mad: int = 0
+    currency: str = "MAD"
 
 
 class EventIn(BaseModel):
@@ -87,7 +127,7 @@ class EventIn(BaseModel):
     event_id: str
     page_url: str | None = None
     value: float | None = None
-    currency: str | None = "SAR"
+    currency: str | None = "MAD"
     content_ids: list[str] | None = None
     phone: str | None = None
     external_id: str | None = None

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.models.models import ContactMessage
 from app.schemas.schemas import ContactIn
-from app.core.phone import normalize_sa_phone, PhoneError
+from app.core.phone import normalize_ma_phone, PhoneError
 from fastapi import HTTPException
 
 router = APIRouter()
@@ -19,7 +19,7 @@ async def contact(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     try:
-        phone = normalize_sa_phone(body.phone)
+        phone = normalize_ma_phone(body.phone)
     except PhoneError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
 

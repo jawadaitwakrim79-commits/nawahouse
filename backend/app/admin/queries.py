@@ -7,28 +7,29 @@ from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.config import settings
 from app.models.click import PageClick
 from app.models.models import Order, OrderItem
 
 
-RIYADH_TZ = timezone(timedelta(hours=3))
+# Morocco uses UTC+1. A fixed offset avoids a tzdata package in the slim image.
+STORE_TZ = timezone(timedelta(hours=1))
+RIYADH_TZ = STORE_TZ
 
 
 def parse_date_range(
     from_str: str | None,
     to_str: str | None,
 ) -> tuple[datetime, datetime]:
-    """Parse YYYY-MM-DD in Asia/Riyadh into a UTC range [from, to)."""
-    now_riyadh = datetime.now(RIYADH_TZ)
-    today_riyadh = now_riyadh.replace(hour=0, minute=0, second=0, microsecond=0)
-    default_to = today_riyadh + timedelta(days=1)
-    default_from = today_riyadh - timedelta(days=29)
+    """Parse YYYY-MM-DD in Africa/Casablanca into a UTC range [from, to)."""
+    now_local = datetime.now(STORE_TZ)
+    today_local = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+    default_to = today_local + timedelta(days=1)
+    default_from = today_local - timedelta(days=29)
 
     def _p(value: str, fallback: datetime) -> datetime:
         try:
             parsed = datetime.strptime(value, "%Y-%m-%d")
-            return parsed.replace(tzinfo=RIYADH_TZ)
+            return parsed.replace(tzinfo=STORE_TZ)
         except Exception:
             return fallback
 
@@ -47,14 +48,14 @@ class Metrics:
     foreign_clicks: int
     unique_sessions: int
     orders_count: int
-    orders_revenue: int  # in SAR
-    conversion_rate: float  # orders / valid_ksa_clicks
+    orders_revenue: int  # in MAD
+    conversion_rate: float  # orders / all clicks
+    morocco_clicks: int = 0
 
 
 def _apply_valid_ksa_filter(stmt, include_invalid: bool):
-    """When STRICT_KSA_ONLY and not include_invalid, filter clicks to is_valid_ksa=True."""
-    if settings.STRICT_KSA_ONLY and not include_invalid:
-        return stmt.where(PageClick.is_valid_ksa.is_(True))
+    """Country is not a gate. Every visit is counted."""
+    del include_invalid
     return stmt
 
 
@@ -69,9 +70,10 @@ async def compute_metrics(
         func.count(PageClick.id).label("total"),
         func.sum(case((PageClick.is_valid_ksa.is_(True), 1), else_=0)).label("valid"),
         func.sum(case((PageClick.is_vpn.is_(True), 1), else_=0)).label("vpn"),
+        func.sum(case((PageClick.country_code == "MA", 1), else_=0)).label("morocco"),
         func.sum(
             case(
-                (and_(PageClick.country_code.is_not(None), PageClick.country_code != "SA"), 1),
+                (and_(PageClick.country_code.is_not(None), PageClick.country_code != "MA"), 1),
                 else_=0,
             )
         ).label("foreign"),
@@ -85,13 +87,14 @@ async def compute_metrics(
     total = int(row.total or 0)
     valid = int(row.valid or 0)
     vpn = int(row.vpn or 0)
+    morocco = int(row.morocco or 0)
     foreign = int(row.foreign or 0)
     sessions = int(row.sessions or 0)
 
     # Orders
     orders_stmt = select(
         func.count(Order.id).label("count"),
-        func.coalesce(func.sum(Order.total_sar), 0).label("rev"),
+        func.coalesce(func.sum(Order.total_mad), 0).label("rev"),
     ).where(
         Order.created_at >= date_from,
         Order.created_at < date_to,
@@ -100,7 +103,7 @@ async def compute_metrics(
     orders_count = int(o_row.count or 0)
     orders_rev = int(o_row.rev or 0)
 
-    denom = valid if (settings.STRICT_KSA_ONLY and not include_invalid) else total
+    denom = total
     cvr = (orders_count / denom) if denom > 0 else 0.0
 
     return Metrics(
@@ -114,6 +117,7 @@ async def compute_metrics(
         orders_count=orders_count,
         orders_revenue=orders_rev,
         conversion_rate=cvr,
+        morocco_clicks=morocco,
     )
 
 
@@ -124,7 +128,7 @@ async def daily_series(
     clicks_stmt = (
         select(
             func.date_trunc("day", PageClick.created_at).label("d"),
-            func.sum(case((PageClick.is_valid_ksa.is_(True), 1), else_=0)).label("valid"),
+            func.count(PageClick.id).label("valid"),
         )
         .where(PageClick.created_at >= date_from, PageClick.created_at < date_to)
         .group_by("d")

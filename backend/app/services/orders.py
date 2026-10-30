@@ -1,6 +1,6 @@
 from __future__ import annotations
 import ipaddress
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from fastapi import Request
 from app.models.models import Order
 from app.schemas.schemas import OrderIn
@@ -59,32 +59,35 @@ def build_sheet_payload(
 ) -> dict:
     """Build the JSON payload sent to the Google Sheet webhook."""
     items_str = " | ".join(
-        f"{l.slug} × {l.quantity}" + (" (upsell 99)" if l.pricing == "upsell" else "")
+        f"{l.slug} × {l.quantity}" + (f" ({l.variant})" if l.variant else "")
         for l in body.lines
     )
-    # Phone local: 0 + 9 digits
-    national = phone.e164[4:]  # strip +966
+    # +212 is four characters, same width as the previous country code.
+    national = phone.e164[4:]
     phone_local = "0" + national
 
-    # created_at as Riyadh time (UTC+3)
-    from datetime import timedelta
-    riyadh_offset = timezone(timedelta(hours=3))
-    now = datetime.now(riyadh_offset)
+    now = datetime.now(timezone(timedelta(hours=1)))
+    stamp = now.strftime("%Y-%m-%d %H:%M")
 
     return {
         "secret": "",  # injected by sheets service from settings
         "order_id": order.public_id,
-        "created_at_riyadh": now.strftime("%Y-%m-%d %H:%M"),
+        # Existing sheet column. The value is now Africa/Casablanca local time.
+        "created_at_riyadh": stamp,
+        "created_at_casablanca": stamp,
         "status": "new",
         "customer_name": order.customer_name,
         "phone_e164": order.phone_e164,
         "phone_local": phone_local,
         "items": items_str,
         "main_units": order.main_units,
-        "upsell_accepted": "yes" if order.upsell_slug else "no",
-        "upsell_slug": order.upsell_slug or "",
-        "total_sar": order.total_sar,
-        "currency": "SAR",
+        "upsell_accepted": "no",
+        "upsell_slug": "",
+        # Existing sheet column name. The amount is MAD; currency says MAD.
+        "total_sar": order.total_mad,
+        "total_mad": order.total_mad,
+        "shipping_mad": order.shipping_mad,
+        "currency": "MAD",
         "payment_method": "COD",
         "page_url": order.page_url or "",
         "event_id": body.event_id,
@@ -95,4 +98,8 @@ def build_sheet_payload(
         "sc_click_id": order.sc_click_id or "",
         "client_ip": client_ip,
         "user_agent": user_agent,
+        "city": order.city or "",
+        "district": "",
+        "address": order.address or "",
+        "landmark": order.delivery_notes or "",
     }

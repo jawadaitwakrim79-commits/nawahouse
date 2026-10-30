@@ -1,36 +1,23 @@
 /**
- * Pricing — client-side mirror of the Python function.
- * Server always rechecks; this is display-only.
+ * Display prices. The server recalculates the order from the catalog.
  */
 
-export function mainTotal(units: number): number {
-  if (units <= 0) return 0;
-  if (units === 1) return 199;
-  if (units === 2) return 279;
-  if (units === 3) return 349;
-  return 349 + 199 * (units - 3);
+import { PRODUCTS, type Slug } from "@/content/products";
+
+export function productPrice(slug: Slug): number {
+  return PRODUCTS[slug]?.price ?? 0;
 }
 
-export function orderTotal(mainUnits: number, upsellUnits: 0 | 1): number {
-  return mainTotal(mainUnits) + 99 * upsellUnits;
+export function goodsTotal(lines: { slug: Slug; quantity: number }[]): number {
+  return lines.reduce((sum, line) => sum + productPrice(line.slug) * line.quantity, 0);
 }
 
-/** Format an integer SAR amount as an Arabic-Indic display string */
-export function formatSAR(amount: number): string {
-  return toArabicIndic(amount) + " ر.س";
+export function orderTotal(goods: number, shippingMad: number): number {
+  return goods + Math.max(0, shippingMad);
 }
 
-function toArabicIndic(n: number): string {
-  return n
-    .toString()
-    .replace(/0/g, "٠")
-    .replace(/1/g, "١")
-    .replace(/2/g, "٢")
-    .replace(/3/g, "٣")
-    .replace(/4/g, "٤")
-    .replace(/5/g, "٥")
-    .replace(/6/g, "٦")
-    .replace(/7/g, "٧")
-    .replace(/8/g, "٨")
-    .replace(/9/g, "٩");
+/** Western digits and DH, the mark used across the store. */
+export function formatMAD(amount: number): string {
+  const formatted = new Intl.NumberFormat("fr-MA", { maximumFractionDigits: 0 }).format(amount);
+  return `${formatted} DH`;
 }

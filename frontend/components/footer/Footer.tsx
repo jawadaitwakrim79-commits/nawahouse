@@ -5,55 +5,49 @@ import { copy } from "@/content/copy";
 export function Footer() {
   const phone = process.env.NEXT_PUBLIC_CONTACT_PHONE;
   const email = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
+  const instagram = process.env.NEXT_PUBLIC_INSTAGRAM_URL || "https://instagram.com/nawahouse";
+  const facebook = process.env.NEXT_PUBLIC_FACEBOOK_URL || "https://facebook.com/nawahouse";
 
   return (
-    <footer className="bg-ivory border-t border-line mt-24">
-      <div className="max-w-[1120px] mx-auto px-5 py-16">
-        {/* Top: brand block + columns */}
-        <div className="grid grid-cols-1 md:grid-cols-[1.3fr_1fr_1fr_1fr] gap-10 mb-12">
-          {/* Brand block */}
+    <footer className="bg-ink text-paper mt-24">
+      <div className="max-w-[1180px] mx-auto px-5 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
           <div className="flex flex-col gap-4">
-            <Logo size="sm" variant="dark" />
-            <p className="text-muted text-sm leading-relaxed max-w-[260px]">
-              {copy.brand.shortDescAr}
-            </p>
-            <div className="flex items-center gap-2 pt-1">
-              <span className="inline-block w-2 h-2 rounded-full bg-brass" aria-hidden />
-              <span className="text-xs text-ink tracking-wide">
-                {copy.brand.tagline} · {copy.brand.taglineEn}
-              </span>
-            </div>
+            <Logo size="sm" variant="light" />
+            <p className="text-paper/70 text-sm leading-relaxed max-w-[260px]">{copy.brand.shortDescAr}</p>
+            <p className="text-brass text-xs tracking-[0.14em] uppercase">{copy.brand.taglineEn}</p>
           </div>
-
           <FooterCol title={copy.footer.shopColumn.title} links={copy.footer.shopColumn.links} />
           <FooterCol title={copy.footer.helpColumn.title} links={copy.footer.helpColumn.links} />
-
           <div>
-            <h4 className="font-bold text-ink mb-4">{copy.footer.contactColumn.title}</h4>
-            <div className="flex flex-col gap-2 text-muted text-sm">
+            <h4 className="text-sm tracking-wide mb-4">{copy.footer.contactColumn.title}</h4>
+            <div className="flex flex-col gap-2 text-paper/70 text-sm">
               {phone && (
-                <a href={`tel:${phone}`} className="hover:text-brand transition-colors">
+                <a href={`tel:${phone}`} className="hover:text-paper" dir="ltr">
                   {phone}
                 </a>
               )}
               {email && (
-                <a href={`mailto:${email}`} className="hover:text-brand transition-colors">
+                <a href={`mailto:${email}`} className="hover:text-paper">
                   {email}
                 </a>
               )}
-              <span>@nawahouse.sa</span>
-              <span className="pt-1">ساعات العمل: ٤ عصرًا – ١١ مساءً</span>
-              <span>الرياض</span>
+              <span>{copy.contact.city}</span>
+              <span>{copy.contact.hours}</span>
+              <div className="flex gap-4 pt-3">
+                <a href={instagram} className="hover:text-brass" target="_blank" rel="noreferrer">
+                  Instagram
+                </a>
+                <a href={facebook} className="hover:text-brass" target="_blank" rel="noreferrer">
+                  Facebook
+                </a>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Bottom row */}
-        <div className="border-t border-line pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-muted text-sm">
+        <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row justify-between gap-3 text-paper/60 text-sm">
           <span>{copy.brand.copyright}</span>
-          <span className="border border-brass text-brass px-4 py-1.5 rounded-full text-xs font-bold tracking-wide">
-            {copy.footer.cod}
-          </span>
+          <span className="text-brass">{copy.footer.cod}</span>
         </div>
       </div>
     </footer>
@@ -69,15 +63,12 @@ function FooterCol({
 }) {
   return (
     <div>
-      <h4 className="font-bold text-ink mb-4">{title}</h4>
+      <h4 className="text-sm tracking-wide mb-4">{title}</h4>
       <ul className="flex flex-col gap-2">
-        {links.map((l) => (
-          <li key={l.href}>
-            <Link
-              href={l.href}
-              className="text-muted text-sm hover:text-brand transition-colors"
-            >
-              {l.label}
+        {links.map((link) => (
+          <li key={link.href}>
+            <Link href={link.href} className="text-paper/70 text-sm hover:text-paper">
+              {link.label}
             </Link>
           </li>
         ))}

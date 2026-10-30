@@ -72,9 +72,9 @@ class Settings(BaseSettings):
     VPN_PROVIDER: str = ""
     VPN_API_KEY: str = ""
 
-    # Dashboard click metrics. Order creation always requires country SA
-    # and does not consult this flag.
-    STRICT_KSA_ONLY: bool = True
+    # Kept so an old environment variable does not crash startup.
+    # Orders are not filtered by country. Dashboard metrics include every visit.
+    STRICT_KSA_ONLY: bool = False
 
 
 settings = Settings()

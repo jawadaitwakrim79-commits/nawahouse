@@ -33,7 +33,7 @@ async def track_event(
         event_id=body.event_id,
         page_url=body.page_url,
         value=body.value,
-        currency=body.currency or "SAR",
+        currency=body.currency or "MAD",
         content_ids=body.content_ids or [],
         phone=body.phone,
         external_id=body.external_id,

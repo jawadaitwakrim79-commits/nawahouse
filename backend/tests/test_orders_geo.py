@@ -75,12 +75,14 @@ class Recorder:
         return None
 
 
-def _order(event_id: str, phone: str = "0512345678") -> dict:
+def _order(event_id: str, phone: str = "0612345678") -> dict:
     return {
         "event_id": event_id,
         "name": "اختبار",
         "phone": phone,
-        "lines": [{"slug": "oud", "quantity": 1, "pricing": "main"}],
+        "city": "الدار البيضاء",
+        "address": "حي المعاريف، شارع الاختبار 12",
+        "lines": [{"slug": "atlas", "quantity": 1, "pricing": "main", "variant": "أسود"}],
     }
 
 
@@ -138,17 +140,19 @@ def test_saudi_lookup_is_the_only_order_endpoint_that_can_save(gate):
         (RuntimeError("mmdb"), "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"),
     ],
 )
-def test_non_saudi_and_failed_lookups_save_nothing(gate, intel, event_id):
+def test_any_country_and_failed_lookups_still_save(gate, intel, event_id):
     client, recorder, seen, install = gate
     install(lambda ip: intel)
     response = client.post(
         "/api/orders",
         json=_order(event_id),
-        headers={"X-Forwarded-For": "2.89.1.1", "CF-Connecting-IP": "2.89.1.1"},
+        headers={"X-Forwarded-For": "105.154.0.8", "CF-Connecting-IP": "105.154.0.8"},
     )
-    assert response.status_code == 403
-    assert recorder.added == []
-    assert recorder.commits == 0
+    assert response.status_code == 201
+    body = response.json()
+    assert body["currency"] == "MAD"
+    assert body["total_mad"] == 1490
+    assert recorder.commits == 2
     assert seen == ["testclient"]
 
 
