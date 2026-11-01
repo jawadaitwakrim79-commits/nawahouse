@@ -2,16 +2,17 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { formatRate, formatSar, formatWhen, type AdminOverview } from "@/lib/admin-view";
+import { formatRate, formatMad, formatWhen, type AdminOverview } from "@/lib/admin-view";
+import { StoreSettingsPanel } from "@/components/admin/StoreSettingsPanel";
 
-function todayRiyadh(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(new Date());
+function todayLocal(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Casablanca" }).format(new Date());
 }
 
 function daysAgo(days: number): string {
-  const start = new Date(`${todayRiyadh()}T00:00:00+03:00`);
+  const start = new Date(`${todayLocal()}T00:00:00+01:00`);
   start.setUTCDate(start.getUTCDate() - days);
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(start);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Casablanca" }).format(start);
 }
 
 export function AdminDashboard() {
@@ -19,7 +20,7 @@ export function AdminDashboard() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [from, setFrom] = useState(daysAgo(29));
-  const [to, setTo] = useState(todayRiyadh());
+  const [to, setTo] = useState(todayLocal());
   const [token, setToken] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -175,15 +176,16 @@ export function AdminDashboard() {
       {error ? <p className="mt-4 text-sm text-[#8B2E2E]">{error}</p> : null}
 
       <section className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="الطلبات" value={formatSar(overview.orders_count)} />
-        <Stat label="الإيراد (ر.س)" value={formatSar(overview.orders_revenue)} />
+        <Stat label="الطلبات" value={formatMad(overview.orders_count)} />
+        <Stat label="الإيراد (د.م)" value={formatMad(overview.orders_revenue)} />
         <Stat label="معدل التحويل" value={formatRate(overview.conversion_rate)} />
-        <Stat label="زيارات سعودية صالحة" value={formatSar(overview.valid_ksa_clicks)} />
+        <Stat label="زيارات من المغرب" value={formatMad(overview.morocco_clicks ?? 0)} />
       </section>
 
       <p className="mt-3 text-xs text-muted">
-        كل الزيارات {formatSar(overview.total_clicks)} · جلسات {formatSar(overview.unique_sessions)} · VPN {formatSar(overview.vpn_clicks)} · خارج السعودية {formatSar(overview.foreign_clicks)}
+        كل الزيارات {formatMad(overview.total_clicks)} · جلسات {formatMad(overview.unique_sessions)} · VPN {formatMad(overview.vpn_clicks)} · خارج المغرب {formatMad(overview.foreign_clicks)}
       </p>
+      <StoreSettingsPanel />
 
       <section className="mt-6 rounded-[20px] border border-line bg-white p-4">
         <h2 className="text-sm text-muted">الطلبات والزيارات يوميًا</h2>
@@ -208,7 +210,7 @@ export function AdminDashboard() {
           <thead className="bg-ivory text-muted">
             <tr>
               <th className="px-3 py-2 text-right font-medium">الطلب</th>
-              <th className="px-3 py-2 text-right font-medium">العميلة</th>
+              <th className="px-3 py-2 text-right font-medium">العميل</th>
               <th className="px-3 py-2 text-right font-medium">المبلغ</th>
               <th className="px-3 py-2 text-right font-medium">الحالة</th>
               <th className="px-3 py-2 text-right font-medium">التاريخ</th>
@@ -230,7 +232,7 @@ export function AdminDashboard() {
                     </Link>
                   </td>
                   <td className="px-3 py-3">{order.customer_name}</td>
-                  <td className="px-3 py-3">{formatSar(order.total_sar)} ر.س</td>
+                  <td className="px-3 py-3">{formatMad(order.total_mad)} DH</td>
                   <td className="px-3 py-3">{order.status}</td>
                   <td className="px-3 py-3">{formatWhen(order.created_at)}</td>
                 </tr>
@@ -249,7 +251,7 @@ export function AdminDashboard() {
             {overview.top_products.map((product) => (
               <li key={product.slug} className="flex justify-between border-b border-line py-2">
                 <span>{product.slug}</span>
-                <span>{formatSar(product.qty)}</span>
+                <span>{formatMad(product.qty)}</span>
               </li>
             ))}
           </ul>

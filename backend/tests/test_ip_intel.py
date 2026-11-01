@@ -15,26 +15,25 @@ def _reset_reader() -> None:
     ip_intel._mmdb_tried = False
 
 
-def test_outside_ksa_is_blocked():
-    intel = IpIntel("US", False, "maxmind-mmdb", None, False)
-    assert ip_intel.checkout_block_reason("8.8.8.8", intel) == "outside_ksa"
+def test_any_country_can_order():
+    us = IpIntel("US", False, "maxmind-mmdb", None, False)
+    ma = IpIntel("MA", False, "maxmind-mmdb", None, False)
+    sa = IpIntel("SA", False, "maxmind-mmdb", None, True)
+    assert ip_intel.checkout_block_reason("8.8.8.8", us) is None
+    assert ip_intel.checkout_block_reason("105.154.0.8", ma) is None
+    assert ip_intel.checkout_block_reason("2.89.1.1", sa) is None
 
 
-def test_saudi_ip_is_allowed():
-    intel = IpIntel("SA", False, "maxmind-mmdb", None, True)
-    assert ip_intel.checkout_block_reason("2.89.1.1", intel) is None
-
-
-def test_private_or_unknown_country_is_rejected():
+def test_private_or_unknown_country_is_not_rejected():
     intel = IpIntel.unknown(source="private")
-    assert ip_intel.checkout_block_reason("127.0.0.1", intel) == "geo_unavailable"
+    assert ip_intel.checkout_block_reason("127.0.0.1", intel) is None
     missing = IpIntel(None, False, "maxmind-mmdb", None, False)
-    assert ip_intel.checkout_block_reason("8.8.8.8", missing) == "geo_unavailable"
+    assert ip_intel.checkout_block_reason("8.8.8.8", missing) is None
 
 
-def test_missing_maxmind_blocks_public_ip():
+def test_missing_maxmind_does_not_block():
     intel = IpIntel.unknown(source="maxmind-unavailable")
-    assert ip_intel.checkout_block_reason("8.8.8.8", intel) == "geo_unavailable"
+    assert ip_intel.checkout_block_reason("8.8.8.8", intel) is None
 
 
 def test_blank_path_uses_container_location(monkeypatch):
@@ -64,7 +63,7 @@ async def test_real_database_blocks_us_and_allows_sa(monkeypatch):
 
     assert us.country_code == "US"
     assert us.source == "maxmind-mmdb"
-    assert ip_intel.checkout_block_reason("8.8.8.8", us) == "outside_ksa"
+    assert ip_intel.checkout_block_reason("8.8.8.8", us) is None
     assert sa.country_code == "SA"
     assert ip_intel.checkout_block_reason("2.89.1.1", sa) is None
     _reset_reader()

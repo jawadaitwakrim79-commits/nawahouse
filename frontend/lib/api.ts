@@ -10,13 +10,17 @@ const API = process.env.NEXT_PUBLIC_API_URL || "https://api.nawahouse.shop";
 export interface OrderLine {
   slug: Slug;
   quantity: number;
-  pricing: "main" | "upsell";
+  pricing: "main";
+  variant?: string | null;
 }
 
 export interface OrderPayload {
   event_id: string;
   name: string;
   phone: string;
+  city: string;
+  address: string;
+  delivery_notes?: string | null;
   lines: OrderLine[];
   page_url?: string;
   fbp?: string | null;
@@ -31,8 +35,28 @@ export interface OrderPayload {
 export interface OrderResponse {
   order_id: string;
   event_id: string;
-  total_sar: number;
+  total_mad: number;
+  shipping_mad: number;
   currency: string;
+}
+
+export interface StoreCategory {
+  slug: string;
+  name_ar: string;
+  sort_order: number;
+  active: boolean;
+}
+
+export interface StoreConfig {
+  currency: string;
+  shipping_mad: number;
+  categories: StoreCategory[];
+}
+
+export async function fetchStoreConfig(): Promise<StoreConfig> {
+  const res = await fetch("/api/store", { cache: "no-store" });
+  if (!res.ok) throw new Error("store");
+  return (await res.json()) as StoreConfig;
 }
 
 export class OrderApiError extends Error {

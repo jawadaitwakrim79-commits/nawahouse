@@ -3,195 +3,132 @@ import Image from "next/image";
 import Link from "next/link";
 import { ProductCard } from "@/components/product/ProductCard";
 import { copy } from "@/content/copy";
-import { REVIEWS } from "@/content/products";
+import { BESTSELLERS, CATEGORIES, NEW_ARRIVALS, REVIEWS } from "@/content/products";
 
 export const metadata: Metadata = {
-  title: "نوا للبيت · ريحة، ضوء، وهواء",
-  description:
-    "ثلاث طقوس للبيت السعودي: عود بلا فحم، شفق للغرفة، ومنقّي HEPA-13. الدفع عند الاستلام.",
+  title: "ساعات ونظارات",
+  description: "نوا هاوس. ساعات ونظارات في المغرب، والأسعار بالدرهم، والدفع عند الاستلام.",
 };
 
 export default function HomePage() {
   return (
     <>
-      {/* ── 1. Hero ── */}
-      <section className="min-h-[90dvh] flex items-center">
-        <div className="band max-w-[1120px] mx-auto px-5 py-16 w-full">
-          <div className="copy flex flex-col justify-center gap-6">
-            <p className="text-brass font-semibold text-xs tracking-[0.18em] uppercase">
-              {copy.hero.eyebrow}
-            </p>
-            <h1 className="text-ink">{copy.hero.headline}</h1>
-            <p className="text-muted text-lg leading-relaxed max-w-[500px]">
-              {copy.hero.sub}
-            </p>
-            <div className="flex flex-col gap-3">
-              <Link
-                href="#rituals"
-                className="inline-flex justify-center items-center bg-brand-deep text-on-brand py-4 px-8 rounded-full font-bold text-base hover:opacity-90 transition-opacity w-fit min-h-[52px]"
-              >
-                {copy.hero.cta} ↓
+      <section className="max-w-[1180px] mx-auto px-5 pt-8 pb-16 lg:pt-14">
+        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-6 lg:gap-10 items-stretch min-h-[70vh]">
+          <div className="flex flex-col justify-end lg:justify-center gap-6 order-2 lg:order-1 py-6">
+            <p className="text-brass text-xs tracking-[0.22em] uppercase">{copy.hero.eyebrow}</p>
+            <h1 className="text-ink max-w-[12ch]">{copy.hero.headline}</h1>
+            <p className="text-muted text-lg max-w-[440px] leading-relaxed">{copy.hero.sub}</p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/shop" className="inline-flex items-center bg-ink text-paper px-7 py-3 text-sm tracking-wide min-h-[48px]">
+                {copy.hero.cta}
               </Link>
-              <p className="text-muted text-sm">{copy.hero.trustLine}</p>
+              <Link href="#categories" className="inline-flex items-center border border-ink px-7 py-3 text-sm min-h-[48px]">
+                {copy.hero.secondary}
+              </Link>
             </div>
           </div>
-          <div className="media relative rounded-[20px] overflow-hidden bg-sand" style={{ minHeight: "400px" }}>
-            <Image
-              src="/images/hero-majlis.webp"
-              alt="مجلس سعودي في المساء"
-              fill
-              priority
-              className="object-cover"
-              sizes="(max-width: 1023px) 100vw, 560px"
-            />
+          <div className="grid grid-cols-2 gap-3 order-1 lg:order-2 min-h-[320px]">
+            <div className="relative overflow-hidden bg-sand">
+              <Image src="/images/hero-watch.jpg" alt="ساعة من مجموعة نوا هاوس" fill priority className="object-cover" sizes="40vw" />
+            </div>
+            <div className="relative overflow-hidden bg-sand mt-8">
+              <Image src="/images/hero-sun.jpg" alt="نظارة شمسية من مجموعة نوا هاوس" fill className="object-cover" sizes="40vw" />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── 1.5. Trust strip (brass dividers between items) ── */}
-      <section className="border-y border-line bg-ivory/60">
-        <div className="max-w-[1120px] mx-auto px-5 py-5 flex flex-wrap justify-center items-center gap-x-10 gap-y-3 text-sm text-ink">
-          {copy.trust.map((item, i) => (
-            <span key={item} className="flex items-center gap-3">
-              {i > 0 && <span className="hidden sm:inline-block w-1 h-1 rounded-full bg-brass" aria-hidden />}
-              <span>{item}</span>
-            </span>
+      <section id="categories" className="max-w-[1180px] mx-auto px-5 py-16">
+        <h2 className="text-center mb-10">تسوّق حسب الفئة</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {CATEGORIES.map((category) => (
+            <Link key={category.slug} href={category.href} className="lift group">
+              <div className="relative bg-sand overflow-hidden" style={{ aspectRatio: "3/4" }}>
+                <Image src={category.image} alt={category.nameAr} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" sizes="280px" />
+              </div>
+              <p className="mt-3 text-center text-sm tracking-wide">{category.nameAr}</p>
+            </Link>
           ))}
         </div>
       </section>
 
-      {/* ── 2. Rituals grid ── */}
-      <section id="rituals" className="max-w-[1120px] mx-auto px-5 py-20">
-        <h2 className="text-center text-ink mb-3">{copy.ritualsSection.title}</h2>
-        <p className="text-center text-muted max-w-[560px] mx-auto mb-12 leading-relaxed">
-          {copy.ritualsSection.sub}
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {(["oud", "shafaq", "safa"] as const).map((slug) => (
+      <section className="max-w-[1180px] mx-auto px-5 py-8">
+        <div className="flex items-end justify-between mb-8">
+          <h2>الأكثر طلباً</h2>
+          <Link href="/shop" className="text-sm text-muted hover:text-ink">المتجر</Link>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10">
+          {BESTSELLERS.map((slug) => (
             <ProductCard key={slug} slug={slug} />
           ))}
         </div>
       </section>
 
-      {/* ── 3. Story bands ── */}
-      {copy.stories.map((story, i) => (
-        <section
-          key={story.href}
-          className="max-w-[1120px] mx-auto px-5 py-16"
-        >
-          <div className={`band${i % 2 === 1 ? " flip" : ""}`}>
-            <div className="copy flex flex-col justify-center gap-5">
-              <h2 className="text-ink">{story.title}</h2>
-              <p className="text-muted text-base leading-relaxed">{story.body}</p>
-              <Link
-                href={story.href}
-                className="text-brand font-bold text-sm hover:underline"
-              >
-                {story.link} ←
-              </Link>
-            </div>
-            <div
-              className="media relative rounded-[20px] overflow-hidden bg-sand"
-              style={{ minHeight: "320px" }}
-            >
-              <Image
-                src={story.image}
-                alt={story.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1023px) 100vw, 560px"
-              />
-            </div>
-          </div>
-        </section>
-      ))}
+      <section className="max-w-[1180px] mx-auto px-5 py-16">
+        <h2 className="mb-8">وصل حديثاً</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-10">
+          {NEW_ARRIVALS.map((slug) => (
+            <ProductCard key={slug} slug={slug} />
+          ))}
+        </div>
+      </section>
 
-      {/* ── 4. Ladder ── */}
-      <section className="bg-twilight text-on-brand py-20 px-5">
-        <div className="max-w-[1120px] mx-auto text-center">
-          <h2 className="text-on-brand mb-10">{copy.ladder.title}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {copy.ladder.tiers.map((tier) => (
-              <div
-                key={tier.label}
-                className={`bg-white/10 rounded-[20px] p-8 flex flex-col items-center gap-3 ${
-                  tier.badge ? "border-2 border-on-brand" : ""
-                }`}
-              >
-                {tier.badge && (
-                  <span className="text-xs font-bold bg-brand text-on-brand px-3 py-1 rounded-full">
-                    {tier.badge}
-                  </span>
-                )}
-                <span className="text-on-brand/70 text-sm">{tier.label}</span>
-                <span className="text-on-brand font-bold text-3xl">{tier.price}</span>
+      <section className="max-w-[1180px] mx-auto px-5 py-8">
+        <h2 className="mb-8">{copy.collections.title}</h2>
+        <div className="grid md:grid-cols-2 gap-4">
+          <CollectionCard
+            href={copy.collections.watches.href}
+            title={copy.collections.watches.title}
+            image="/images/collections/watches.jpg"
+            alt="مجموعة الساعات"
+          />
+          <CollectionCard
+            href={copy.collections.eyewear.href}
+            title={copy.collections.eyewear.title}
+            image="/images/collections/eyewear.jpg"
+            alt="مجموعة النظارات"
+          />
+        </div>
+      </section>
+
+      <section className="bg-ivory border-y border-line">
+        <div className="max-w-[1180px] mx-auto px-5 py-16">
+          <h2 className="text-center mb-10">{copy.why.title}</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {copy.why.items.map((item) => (
+              <div key={item.title}>
+                <h3 className="text-base mb-2">{item.title}</h3>
+                <p className="text-muted text-sm leading-relaxed">{item.body}</p>
               </div>
             ))}
           </div>
-          <p className="text-on-brand/70 text-sm mb-8">{copy.ladder.sub}</p>
-          <Link
-            href="/shop"
-            className="inline-flex bg-on-brand text-brand-deep py-4 px-10 rounded-full font-bold text-base hover:opacity-90 transition-opacity min-h-[52px]"
-          >
-            {copy.ladder.cta}
-          </Link>
         </div>
       </section>
 
-      {/* ── 5. Trust ── */}
-      <section className="max-w-[1120px] mx-auto px-5 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {copy.trust.map((item) => (
-            <div key={item} className="bg-ivory rounded-[16px] p-5 text-center">
-              <p className="text-ink text-sm font-bold leading-snug">{item}</p>
-            </div>
+      <section className="max-w-[1180px] mx-auto px-5 py-16">
+        <h2 className="text-center mb-10">{copy.reviewsTitle}</h2>
+        <div className="grid md:grid-cols-3 gap-6">
+          {REVIEWS.map((review) => (
+            <figure key={review.author} className="border border-line p-6">
+              <blockquote className="text-ink leading-relaxed">«{review.text}»</blockquote>
+              <figcaption className="text-muted text-sm mt-4">
+                {review.author} · {review.city}
+              </figcaption>
+            </figure>
           ))}
         </div>
-      </section>
-
-      {/* ── 6. Reviews ── */}
-      <section className="max-w-[1120px] mx-auto px-5 py-16">
-        <h2 className="text-center text-ink mb-12">{copy.voices.title}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {REVIEWS.map((r) => (
-            <div key={r.author} className="bg-ivory rounded-[20px] p-6 flex flex-col gap-3">
-              <div className="stars">★★★★★</div>
-              <p className="text-ink text-base leading-relaxed">&laquo;{r.text}&raquo;</p>
-              <p className="text-muted text-sm mt-auto">— {r.author}، {r.city}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── 7. FAQ ── */}
-      <section className="max-w-[720px] mx-auto px-5 py-16">
-        <h2 className="text-center text-ink mb-10">{copy.faq.title}</h2>
-        <div className="flex flex-col gap-4">
-          {copy.faq.items.map((item) => (
-            <details
-              key={item.q}
-              className="bg-ivory rounded-[16px] p-5 cursor-pointer group"
-            >
-              <summary className="font-bold text-ink list-none flex justify-between items-center">
-                {item.q}
-                <span className="text-muted group-open:rotate-180 transition-transform">↓</span>
-              </summary>
-              <p className="text-muted text-sm mt-3 leading-relaxed">{item.a}</p>
-            </details>
-          ))}
-        </div>
-      </section>
-
-      {/* ── 8. Close CTA ── */}
-      <section className="text-center py-20 px-5">
-        <h2 className="text-ink mb-6">{copy.close.title}</h2>
-        <Link
-          href="/shop"
-          className="inline-flex bg-brand-deep text-on-brand py-4 px-10 rounded-full font-bold text-base hover:opacity-90 transition-opacity min-h-[52px]"
-        >
-          {copy.close.cta}
-        </Link>
       </section>
     </>
+  );
+}
+
+function CollectionCard({ href, title, image, alt }: { href: string; title: string; image: string; alt: string }) {
+  return (
+    <Link href={href} className="relative block min-h-[280px] overflow-hidden bg-sand group">
+      <Image src={image} alt={alt} fill className="object-cover transition-transform duration-700 group-hover:scale-[1.03]" sizes="(max-width: 768px) 100vw, 560px" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+      <span className="absolute bottom-6 start-6 text-paper text-2xl font-serif">{title}</span>
+    </Link>
   );
 }

@@ -51,7 +51,7 @@ services:
       ADMIN_PASSWORD: "${ADMIN_PASSWORD}"
       # ── IP intelligence ──
       MAXMIND_DB_PATH: "/app/data/GeoLite2-Country.mmdb"
-      STRICT_KSA_ONLY: "true"
+      STRICT_KSA_ONLY: "false"
       # VPN provider — fill after choosing one (ipqualityscore / proxycheck / ipinfo)
       VPN_PROVIDER: "${VPN_PROVIDER}"
       VPN_API_KEY: "${VPN_API_KEY}"

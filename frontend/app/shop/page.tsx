@@ -2,61 +2,79 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ProductCard } from "@/components/product/ProductCard";
 import { copy } from "@/content/copy";
+import { adminApiBase } from "@/lib/admin-proxy";
+import { CATEGORIES, PRODUCTS_ARRAY, type CategorySlug } from "@/content/products";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "الطقوس الثلاث",
-  description: "نوا عود، نوا شفق، ونوا صفاء. ثلاث قطع ضد ثلاثة أشياء في البيت.",
+  title: "المتجر",
+  description: "ساعات رجالية ونسائية، نظارات شمسية، وإطارات طبية من نوا هاوس.",
 };
 
-export default function ShopPage() {
+const KNOWN = new Set(CATEGORIES.map((category) => category.slug));
+
+export default async function ShopPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
+  const { category } = await searchParams;
+  const remote = await loadCategories();
+  const visible = new Set(
+    (remote ?? CATEGORIES.map((item) => ({ slug: item.slug, name_ar: item.nameAr, active: true })))
+      .filter((item) => item.active)
+      .map((item) => item.slug)
+  );
+  const labels = new Map((remote ?? []).map((item) => [item.slug, item.name_ar]));
+  const active = category && KNOWN.has(category as CategorySlug) && visible.has(category) ? (category as CategorySlug) : null;
+  const products = (active ? PRODUCTS_ARRAY.filter((product) => product.category === active) : PRODUCTS_ARRAY).filter(
+    (product) => visible.has(product.category)
+  );
+
   return (
-    <div className="max-w-[1120px] mx-auto px-5 py-16">
-      <div className="text-center mb-12">
-        <h1 className="text-ink mb-3">{copy.shop.title}</h1>
-        <p className="text-muted text-lg">{copy.shop.sub}</p>
+    <div className="max-w-[1180px] mx-auto px-5 py-12">
+      <h1 className="mb-3">{copy.shop.title}</h1>
+      <p className="text-muted mb-8">{copy.shop.sub}</p>
+      <div className="flex gap-2 overflow-x-auto pb-4 mb-8">
+        <Chip href="/shop" active={!active} label={copy.shop.all} />
+        {CATEGORIES.filter((item) => visible.has(item.slug)).map((item) => (
+          <Chip key={item.slug} href={item.href} active={active === item.slug} label={labels.get(item.slug) || item.nameAr} />
+        ))}
       </div>
-
-      {/* Anchor chips */}
-      <div className="flex justify-center gap-3 flex-wrap mb-10">
-        {["الكل", "الريحة", "الضوء", "الهواء"].map((chip, i) => {
-          const hrefs = ["#all", "#oud", "#shafaq", "#safa"];
-          return (
-            <a
-              key={chip}
-              href={hrefs[i]}
-              className="px-5 py-2 rounded-full border border-line text-muted text-sm hover:border-brand hover:text-brand transition-colors"
-            >
-              {chip}
-            </a>
-          );
-        })}
-      </div>
-
-      {/* Grid */}
-      <div id="all" className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div id="oud"><ProductCard slug="oud" /></div>
-        <div id="shafaq"><ProductCard slug="shafaq" /></div>
-        <div id="safa"><ProductCard slug="safa" /></div>
-      </div>
-
-      {/* Ladder banner */}
-      <div className="mt-16 bg-twilight text-on-brand rounded-[24px] p-10 text-center">
-        <h2 className="text-on-brand mb-8">{copy.ladder.title}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {copy.ladder.tiers.map((tier) => (
-            <div key={tier.label} className="bg-white/10 rounded-[16px] p-6">
-              {tier.badge && (
-                <div className="text-xs font-bold text-brand-deep bg-on-brand px-3 py-1 rounded-full inline-block mb-2">
-                  {tier.badge}
-                </div>
-              )}
-              <div className="text-on-brand/70 text-sm">{tier.label}</div>
-              <div className="text-on-brand font-bold text-2xl mt-1">{tier.price}</div>
-            </div>
+      {products.length === 0 ? (
+        <p className="text-muted">{copy.shop.empty}</p>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10">
+          {products.map((product) => (
+            <ProductCard key={product.slug} slug={product.slug} />
           ))}
         </div>
-        <p className="text-on-brand/70 text-sm">{copy.ladder.sub}</p>
-      </div>
+      )}
     </div>
+  );
+}
+
+async function loadCategories(): Promise<{ slug: string; name_ar: string; active: boolean }[] | null> {
+  try {
+    const response = await fetch(`${adminApiBase()}/api/store`, { cache: "no-store" });
+    if (!response.ok) return null;
+    const data = (await response.json()) as { categories?: { slug: string; name_ar: string; active: boolean }[] };
+    return data.categories ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function Chip({ href, label, active }: { href: string; label: string; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={`shrink-0 px-4 py-2 text-sm border ${
+        active ? "bg-ink text-paper border-ink" : "border-line text-ink"
+      }`}
+    >
+      {label}
+    </Link>
   );
 }

@@ -228,18 +228,12 @@ def describe_maxmind() -> str:
 
 def checkout_block_reason(ip: str, intel: IpIntel) -> Optional[str]:
     """
-    None only for a resolved Saudi address that is not a VPN.
-    Every other result rejects the order: another country, a private or
-    missing address, a lookup error, or an unreadable MaxMind file.
+    Country and VPN lookups stay available for the dashboard.
+    They do not reject an order. Morocco, any other country, a private
+    address, or a missing MaxMind file can all place a cash-on-delivery order.
     """
-    del ip  # the caller already resolved the address; the decision is the country
-    if intel.country_code == "SA" and not intel.is_vpn:
-        return None
-    if intel.is_vpn:
-        return "vpn"
-    if intel.country_code and intel.country_code != "SA":
-        return "outside_ksa"
-    return "geo_unavailable"
+    del ip, intel
+    return None
 
 
 async def lookup(ip: str) -> IpIntel:

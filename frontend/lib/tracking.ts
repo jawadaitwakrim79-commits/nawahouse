@@ -112,14 +112,14 @@ export function trackViewContent(eventId: string, params: TrackEventParams) {
   const base = {
     content_ids: params.contentIds,
     content_type: "product",
-    currency: params.currency || "SAR",
+    currency: params.currency || "MAD",
     value: params.value,
   };
   enqueue({ platform: "meta", name: "ViewContent", payload: base, eventId });
   enqueue({ platform: "tiktok", name: "ViewContent", payload: {
     contents: (params.contentIds || []).map(id => ({ content_id: id })),
     content_type: "product",
-    currency: params.currency || "SAR",
+    currency: params.currency || "MAD",
     value: params.value,
   }, eventId });
   enqueue({ platform: "snap", name: "VIEW_CONTENT", payload: base, eventId });
@@ -130,7 +130,7 @@ export function trackAddToCart(eventId: string, params: TrackEventParams) {
   enqueue({ platform: "meta", name: "AddToCart", payload: {
     content_ids: params.contentIds,
     content_type: "product",
-    currency: params.currency || "SAR",
+    currency: params.currency || "MAD",
     value: params.value,
     contents: params.contents,
     num_items: params.numItems,
@@ -138,14 +138,14 @@ export function trackAddToCart(eventId: string, params: TrackEventParams) {
   enqueue({ platform: "tiktok", name: "AddToCart", payload: {
     contents: (params.contentIds || []).map(id => ({ content_id: id })),
     content_type: "product",
-    currency: params.currency || "SAR",
+    currency: params.currency || "MAD",
     value: params.value,
   }, eventId });
   enqueue({ platform: "snap", name: "ADD_CART", payload: {
     item_ids: params.contentIds,
     number_items: params.numItems,
     price: params.value,
-    currency: params.currency || "SAR",
+    currency: params.currency || "MAD",
   }, eventId });
   flushPixelQueue();
 }
@@ -154,7 +154,7 @@ export function trackInitiateCheckout(eventId: string, params: TrackEventParams)
   const base = {
     content_ids: params.contentIds,
     content_type: "product",
-    currency: params.currency || "SAR",
+    currency: params.currency || "MAD",
     value: params.value,
     num_items: params.numItems,
   };
@@ -162,13 +162,13 @@ export function trackInitiateCheckout(eventId: string, params: TrackEventParams)
   enqueue({ platform: "tiktok", name: "InitiateCheckout", payload: {
     contents: (params.contentIds || []).map(id => ({ content_id: id })),
     content_type: "product",
-    currency: params.currency || "SAR",
+    currency: params.currency || "MAD",
     value: params.value,
   }, eventId });
   enqueue({ platform: "snap", name: "START_CHECKOUT", payload: {
     item_ids: params.contentIds,
     price: params.value,
-    currency: params.currency || "SAR",
+    currency: params.currency || "MAD",
   }, eventId });
   flushPixelQueue();
 }
@@ -184,7 +184,7 @@ export function trackPurchase(
 
   window.fbq?.("track", "Purchase", {
     value: params.value,
-    currency: params.currency || "SAR",
+    currency: params.currency || "MAD",
     content_ids: params.contentIds,
     content_type: "product",
     contents: params.contents,
@@ -195,14 +195,14 @@ export function trackPurchase(
     contents: (params.contentIds || []).map(id => ({ content_id: id })),
     content_type: "product",
     value: params.value,
-    currency: params.currency || "SAR",
+    currency: params.currency || "MAD",
   }, { event_id: eventId });
 
   window.snaptr?.("track", "PURCHASE", {
     client_dedup_id: eventId,
     transaction_id: orderId,
     price: params.value,
-    currency: params.currency || "SAR",
+    currency: params.currency || "MAD",
     item_ids: params.contentIds,
     number_items: params.numItems,
   });

@@ -24,3 +24,30 @@ export async function proxyAdminGet(request: NextRequest, path: string) {
     headers: { "Content-Type": "application/json" },
   });
 }
+
+export async function proxyAdminWrite(request: NextRequest, path: string) {
+  const session = request.cookies.get(ADMIN_COOKIE)?.value;
+  if (!session) {
+    return NextResponse.json({ ok: false }, { status: 401 });
+  }
+  const body = await request.text();
+  let upstream: Response;
+  try {
+    upstream = await fetch(adminUpstream(path), {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${session}`,
+        "Content-Type": "application/json",
+      },
+      body,
+      cache: "no-store",
+    });
+  } catch {
+    return NextResponse.json({ ok: false, error: "backend" }, { status: 502 });
+  }
+  const text = await upstream.text();
+  return new NextResponse(text, {
+    status: upstream.status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
